@@ -1,0 +1,16 @@
+# Never commit these from a real Home Assistant config folder
+secrets.yaml
+.storage/
+*.db
+*.db-shm
+*.db-wal
+*.log
+*.log.*
+.cloud/
+.HA_VERSION
+known_devices.yaml
+ip_bans.yaml
+tts/
+backups/
+deps/
+__pycache__/

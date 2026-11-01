@@ -1,0 +1,8 @@
+# Add these lines to your configuration.yaml to load this repository.
+# Copy packages/ and blueprints/ into your /config folder first.
+
+homeassistant:
+  packages: !include_dir_named packages
+
+# Keep the UI-managed automations working alongside the packages
+automation: !include automations.yaml

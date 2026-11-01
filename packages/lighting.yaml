@@ -1,0 +1,249 @@
+# =============================================================================
+#  LIGHTING
+#  Every light point has a SONOFF Zigbee relay behind its wall switch
+#  (ZBMINIR2 / ZBMINIL2 single, MINI DUO double), so the switches keep working
+#  normally and Home Assistant sees every light. Relays are exposed as `light`
+#  entities (Settings → Helpers → "Change device type of a switch").
+#
+#  Each room runs one instance of the presence-lighting blueprint, driven by
+#  that room's Aqara FP300 mmWave sensor (storage: SONOFF SNZB-06P).
+# =============================================================================
+
+input_boolean:
+  study_bedroom_light_override:
+    name: Study bedroom light override
+    icon: mdi:hand-back-left
+  small_bedroom_light_override:
+    name: Small bedroom light override
+    icon: mdi:hand-back-left
+  double_bedroom_light_override:
+    name: Double bedroom light override
+    icon: mdi:hand-back-left
+  bathroom_light_override:
+    name: Bathroom light override
+    icon: mdi:hand-back-left
+  wc_light_override:
+    name: WC light override
+    icon: mdi:hand-back-left
+  storage_light_override:
+    name: Storage light override
+    icon: mdi:hand-back-left
+  living_room_light_override:
+    name: Living room light override
+    icon: mdi:hand-back-left
+  kitchen_light_override:
+    name: Kitchen light override
+    icon: mdi:hand-back-left
+
+automation:
+  # ---------------------------------------------------------------- bedrooms
+  # Lights follow presence in the evening, but never switch on by themselves
+  # in Night mode.
+  - id: lighting_study_bedroom
+    alias: Lighting - Study bedroom presence
+    use_blueprint:
+      path: antkarag13/presence_lighting.yaml
+      input:
+        presence_sensor: binary_sensor.study_bedroom_presence
+        main_light: light.study_bedroom_ceiling
+        illuminance_sensor: sensor.study_bedroom_illuminance
+        night_behavior: "off"
+        off_delay: 300
+        override_helper: input_boolean.study_bedroom_light_override
+
+  - id: lighting_small_bedroom
+    alias: Lighting - Small bedroom presence
+    use_blueprint:
+      path: antkarag13/presence_lighting.yaml
+      input:
+        presence_sensor: binary_sensor.small_bedroom_presence
+        main_light: light.small_bedroom_ceiling
+        illuminance_sensor: sensor.small_bedroom_illuminance
+        night_behavior: "off"
+        off_delay: 300
+        override_helper: input_boolean.small_bedroom_light_override
+
+  - id: lighting_double_bedroom
+    alias: Lighting - Double bedroom presence
+    use_blueprint:
+      path: antkarag13/presence_lighting.yaml
+      input:
+        presence_sensor: binary_sensor.double_bedroom_presence
+        main_light: light.double_bedroom_ceiling
+        illuminance_sensor: sensor.double_bedroom_illuminance
+        night_behavior: "off"
+        off_delay: 300
+        override_helper: input_boolean.double_bedroom_light_override
+
+  # -------------------------------------------------------------- wet rooms
+  # Bathroom, WC and storage get little daylight, so they ignore lux and
+  # always light up, day or night. mmWave sees a still person, so the light
+  # never goes off on someone in the shower.
+  - id: lighting_bathroom
+    alias: Lighting - Bathroom presence
+    use_blueprint:
+      path: antkarag13/presence_lighting.yaml
+      input:
+        presence_sensor: binary_sensor.bathroom_presence
+        main_light: light.bathroom
+        off_delay: 60
+        override_helper: input_boolean.bathroom_light_override
+
+  - id: lighting_wc
+    alias: Lighting - WC presence
+    use_blueprint:
+      path: antkarag13/presence_lighting.yaml
+      input:
+        presence_sensor: binary_sensor.wc_presence
+        main_light: light.wc
+        off_delay: 60
+        override_helper: input_boolean.wc_light_override
+
+  - id: lighting_storage
+    alias: Lighting - Storage presence
+    use_blueprint:
+      path: antkarag13/presence_lighting.yaml
+      input:
+        presence_sensor: binary_sensor.storage_presence
+        main_light: light.storage
+        off_delay: 30
+        override_helper: input_boolean.storage_light_override
+
+  # ------------------------------------------------------------- day zone
+  # Kitchen at night: only the counter LED, enough for a glass of water.
+  - id: lighting_kitchen
+    alias: Lighting - Kitchen presence
+    use_blueprint:
+      path: antkarag13/presence_lighting.yaml
+      input:
+        presence_sensor: binary_sensor.kitchen_presence
+        main_light: light.kitchen_ceiling
+        night_light: light.kitchen_counter_led
+        night_behavior: night_light
+        illuminance_sensor: sensor.kitchen_illuminance
+        off_delay: 300
+        override_helper: input_boolean.kitchen_light_override
+
+  - id: lighting_living_room
+    alias: Lighting - Living room presence
+    use_blueprint:
+      path: antkarag13/presence_lighting.yaml
+      input:
+        presence_sensor: binary_sensor.living_room_presence
+        main_light: light.living_room_ceiling
+        illuminance_sensor: sensor.living_room_illuminance
+        night_behavior: "off"
+        off_delay: 600
+        override_helper: input_boolean.living_room_light_override
+
+  # ------------------------------------------------------------- house modes
+  - id: lighting_house_mode
+    alias: Lighting - Follow house mode
+    description: >
+      Away/Vacation: every light in the apartment off. Night: lights in the day
+      zone, hallway and balconies off (bedrooms are left alone).
+    triggers:
+      - trigger: state
+        entity_id: input_select.house_mode
+        to:
+          - Away
+          - Vacation
+        id: away
+      - trigger: state
+        entity_id: input_select.house_mode
+        to: Night
+        id: night
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: away
+            sequence:
+              - action: light.turn_off
+                target:
+                  floor_id: apartment
+          - conditions:
+              - condition: trigger
+                id: night
+            sequence:
+              - action: light.turn_off
+                target:
+                  area_id:
+                    - living_room
+                    - kitchen
+                    - hallway
+                    - balcony_east
+                    - balcony_south
+    mode: queued
+
+  # --------------------------------------------------------------- hallway
+  # The hallway (three-way switch, no sensor) is the one light people forget.
+  - id: lighting_hallway_timeout
+    alias: Lighting - Hallway auto-off
+    description: Off after 10 min at night or 30 min during the day.
+    triggers:
+      - trigger: state
+        entity_id: light.hallway
+        to: "on"
+        for:
+          minutes: 10
+        id: short
+      - trigger: state
+        entity_id: light.hallway
+        to: "on"
+        for:
+          minutes: 30
+        id: long
+    conditions:
+      - condition: or
+        conditions:
+          - condition: trigger
+            id: long
+          - condition: state
+            entity_id: input_select.house_mode
+            state: Night
+    actions:
+      - action: light.turn_off
+        target:
+          entity_id: light.hallway
+    mode: single
+
+  # -------------------------------------------------------------- balconies
+  # Balcony doors have magnetic contacts (from the alarm). After dark, opening
+  # one switches on the light of that balcony.
+  - id: lighting_balcony_door
+    alias: Lighting - Balcony light when its door opens after dark
+    triggers:
+      - trigger: door.opened
+        target:
+          entity_id:
+            - binary_sensor.balcony_east_door
+            - binary_sensor.balcony_south_door
+    conditions:
+      - condition: state
+        entity_id: sun.sun
+        state: below_horizon
+      - condition: state
+        entity_id: input_select.house_mode
+        state: Home
+    actions:
+      - action: light.turn_on
+        target:
+          area_id: "{{ area_id(trigger.entity_id) }}"
+    mode: parallel
+
+  - id: lighting_balcony_off
+    alias: Lighting - Balcony light off when door closed for 15 min
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.balcony_east_door
+          - binary_sensor.balcony_south_door
+        to: "off"
+        for:
+          minutes: 15
+    actions:
+      - action: light.turn_off
+        target:
+          area_id: "{{ area_id(trigger.entity_id) }}"
+    mode: parallel

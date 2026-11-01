@@ -1,0 +1,133 @@
+# =============================================================================
+#  MAINTENANCE
+#  The boring jobs nobody remembers: batteries, devices that drop off the
+#  Zigbee network, and the filters of the five ducted A/C units, which sit
+#  behind access hatches in the ceilings and are easy to forget.
+# =============================================================================
+
+input_datetime:
+  ac_filters_cleaned:
+    name: A/C filters last cleaned
+    has_date: true
+    has_time: false
+
+input_button:
+  ac_filters_cleaned:
+    name: A/C filters cleaned
+    icon: mdi:air-filter
+
+automation:
+  - id: maintenance_filters_cleaned
+    alias: Maintenance - Record A/C filter cleaning
+    triggers:
+      - trigger: state
+        entity_id: input_button.ac_filters_cleaned
+        not_from:
+          - unavailable
+          - unknown
+    actions:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.ac_filters_cleaned
+        data:
+          date: "{{ now().date() }}"
+    mode: single
+
+  - id: maintenance_filters_reminder
+    alias: Maintenance - A/C filter reminder
+    description: Every morning, check whether the filters are older than 60 days.
+    triggers:
+      - trigger: time
+        at: "10:00:00"
+    variables:
+      cleaned: "{{ state_attr('input_datetime.ac_filters_cleaned', 'timestamp') }}"
+      # A date-only input_datetime that was never set reads 1970-01-01, so
+      # anything before 2000 counts as "never cleaned".
+      days: >
+        {{ 999 if cleaned is none or cleaned < 946684800
+           else ((now().timestamp() - cleaned) / 86400) | int }}
+    conditions:
+      - "{{ days >= 60 }}"
+      # Remind on the first day and then once a week, not every day
+      - "{{ days == 60 or (days - 60) % 7 == 0 or days == 999 }}"
+    actions:
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: A/C filters
+          message: >
+            {{ 'The A/C filters have never been logged as cleaned.' if days == 999
+               else 'The A/C filters were last cleaned ' ~ days ~ ' days ago.' }}
+            Five hatches: bathroom, hallway (×3), storage room.
+    mode: single
+
+  - id: maintenance_battery_report
+    alias: Maintenance - Weekly low battery report
+    description: >
+      Every Sunday, lists every battery-powered device (window contacts,
+      SNZB-06P) below 20 %, so batteries get replaced before the alarm loses
+      a sensor.
+    triggers:
+      - trigger: time
+        at: "11:00:00"
+    variables:
+      lines: >
+        {% set ns = namespace(out=[]) %}
+        {% for s in states.sensor
+             | selectattr('attributes.device_class', 'defined')
+             | selectattr('attributes.device_class', 'eq', 'battery')
+             if s.state | is_number and s.state | float < 20 %}
+          {% set ns.out = ns.out + [s.name ~ ': ' ~ s.state ~ ' %'] %}
+        {% endfor %}
+        {{ ns.out }}
+    conditions:
+      - condition: time
+        weekday: sun
+      - "{{ lines | count > 0 }}"
+    actions:
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: "Low batteries ({{ lines | count }})"
+          message: "{{ lines | join('\n') }}"
+    mode: single
+
+  - id: maintenance_device_offline
+    alias: Maintenance - Zigbee relay or plug offline
+    description: >
+      Every mains-powered Zigbee device is also a router for the mesh, so one
+      going offline for 10 minutes is worth knowing about (tripped breaker,
+      failed relay).
+    triggers:
+      - trigger: state
+        entity_id:
+          - light.study_bedroom_ceiling
+          - light.small_bedroom_ceiling
+          - light.double_bedroom_ceiling
+          - light.hallway
+          - light.bathroom
+          - light.storage
+          - light.wc
+          - light.kitchen_counter_led
+          - light.balcony_east
+          - light.balcony_south
+          - light.kitchen_ceiling
+          - light.kitchen_island_pendant
+          - light.living_room_ceiling
+          - light.dining_pendant
+          - switch.washing_machine
+          - switch.freezer
+          - switch.water_heater
+        to: unavailable
+        for:
+          minutes: 10
+    actions:
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: Device offline
+          message: "{{ trigger.to_state.name }} has been offline for 10 minutes."
+    mode: parallel

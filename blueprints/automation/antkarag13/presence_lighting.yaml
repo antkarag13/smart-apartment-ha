@@ -1,0 +1,172 @@
+blueprint:
+  name: Presence lighting (lux, night mode, manual override)
+  description: >
+    Turns a room's light on when the mmWave presence sensor detects someone and
+    off once the room has been empty for the off-delay.
+
+    - Only switches on when the room is dark enough (optional illuminance sensor).
+    - In Night house mode it can use a softer night light instead, or stay off
+      (bedrooms), so nobody is woken by a ceiling light at 3 am.
+    - If someone switches the light off by hand while the room is occupied, it
+      stays off until the room empties: the automation never fights a person.
+  domain: automation
+  source_url: https://github.com/antkarag13/smart-apartment-ha/blob/main/blueprints/automation/antkarag13/presence_lighting.yaml
+  input:
+    presence_sensor:
+      name: Presence sensor
+      description: mmWave presence sensor of the room (Aqara FP300, SONOFF SNZB-06P, ...).
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+              device_class:
+                - occupancy
+                - presence
+    main_light:
+      name: Main light
+      selector:
+        entity:
+          filter:
+            - domain: light
+    night_light:
+      name: Night light (optional)
+      description: Softer light used in Night mode, e.g. the kitchen counter LED.
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: light
+    night_behavior:
+      name: In Night mode
+      default: main_light
+      selector:
+        select:
+          options:
+            - label: Use the main light as usual
+              value: main_light
+            - label: Use the night light only
+              value: night_light
+            - label: Stay off
+              value: "off"
+    illuminance_sensor:
+      name: Illuminance sensor (optional)
+      description: Leave empty to ignore daylight.
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: illuminance
+    lux_threshold:
+      name: Dark below
+      default: 40
+      selector:
+        number:
+          min: 0
+          max: 1000
+          unit_of_measurement: lx
+    off_delay:
+      name: Off delay
+      description: How long the room must be empty before the light goes off.
+      default: 120
+      selector:
+        number:
+          min: 10
+          max: 3600
+          unit_of_measurement: s
+    override_helper:
+      name: Manual override helper
+      description: An input_boolean that remembers a manual "off" until the room empties.
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+    house_mode:
+      name: House mode selector
+      default: input_select.house_mode
+      selector:
+        entity:
+          filter:
+            - domain: input_select
+
+variables:
+  presence_sensor: !input presence_sensor
+  main_light: !input main_light
+  night_light: !input night_light
+  night_behavior: !input night_behavior
+  lux_sensor: !input illuminance_sensor
+  lux_threshold: !input lux_threshold
+  house_mode: !input house_mode
+  is_dark: >
+    {{ lux_sensor == '' or not is_number(states(lux_sensor))
+       or states(lux_sensor) | float < lux_threshold | float }}
+  wanted: >
+    {{ night_behavior if is_state(house_mode, 'Night') else 'main_light' }}
+
+triggers:
+  - trigger: occupancy.detected
+    target:
+      entity_id: !input presence_sensor
+    id: occupied
+  # Plain state trigger with `to:` only, so an empty room is never missed when
+  # the sensor drops to `unavailable` on its way to `off`.
+  - trigger: state
+    entity_id: !input presence_sensor
+    to: "off"
+    for:
+      seconds: !input off_delay
+    id: empty
+  - trigger: state
+    entity_id: !input main_light
+    to: "off"
+    id: light_off
+
+actions:
+  - choose:
+      - alias: Someone entered and it's dark
+        conditions:
+          - condition: trigger
+            id: occupied
+          - condition: state
+            entity_id: !input override_helper
+            state: "off"
+          - "{{ is_dark }}"
+        sequence:
+          - choose:
+              - conditions: "{{ wanted == 'main_light' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input main_light
+              - conditions: "{{ wanted == 'night_light' and night_light != '' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: "{{ night_light }}"
+      - alias: Room has been empty for the off delay
+        conditions:
+          - condition: trigger
+            id: empty
+        sequence:
+          - action: light.turn_off
+            target:
+              entity_id: "{{ [main_light, night_light] | reject('eq', '') | list }}"
+          - action: input_boolean.turn_off
+            target:
+              entity_id: !input override_helper
+      - alias: A person switched the light off while the room is occupied
+        conditions:
+          - condition: trigger
+            id: light_off
+          # No parent context = not caused by an automation (wall switch or app)
+          - "{{ trigger.to_state.context.parent_id is none }}"
+          - condition: state
+            entity_id: !input presence_sensor
+            state: "on"
+        sequence:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: !input override_helper
+
+mode: queued
+max: 10

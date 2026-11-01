@@ -1,0 +1,284 @@
+# =============================================================================
+#  ENERGY
+#  - SONOFF POWCT on the main line in the panel: whole-apartment power.
+#  - DIN-rail power relay for the water heater (own line, Γ14 C20 / 3×4).
+#  - SP1 / SP2: power-metering smart plugs on the washing machine and the
+#    chest freezer in the storage room.
+# =============================================================================
+
+input_boolean:
+  load_shed:
+    name: Load shedding active
+    icon: mdi:transmission-tower-off
+  washer_running:
+    name: Washing machine running
+    icon: mdi:washing-machine
+
+input_button:
+  water_heater_boost:
+    name: Water heater boost (1 h)
+    icon: mdi:water-boiler
+
+input_number:
+  max_house_power:
+    name: Maximum house power
+    icon: mdi:flash-alert
+    min: 3000
+    max: 12000
+    step: 250
+    unit_of_measurement: W
+    mode: box
+
+timer:
+  water_heater_boost:
+    name: Water heater boost
+    duration: "01:00:00"
+    restore: true
+
+# Weekly heating windows for the water heater. Edit from the UI later.
+schedule:
+  water_heater:
+    name: Water heater schedule
+    icon: mdi:calendar-clock
+    monday: &heater_days
+      - from: "05:30:00"
+        to: "06:45:00"
+      - from: "18:00:00"
+        to: "19:00:00"
+    tuesday: *heater_days
+    wednesday: *heater_days
+    thursday: *heater_days
+    friday: *heater_days
+    saturday:
+      - from: "08:00:00"
+        to: "09:30:00"
+      - from: "18:00:00"
+        to: "19:00:00"
+    sunday:
+      - from: "08:00:00"
+        to: "09:30:00"
+      - from: "18:00:00"
+        to: "19:00:00"
+
+utility_meter:
+  energy_daily:
+    name: Energy today
+    source: sensor.mains_energy
+    cycle: daily
+  energy_monthly:
+    name: Energy this month
+    source: sensor.mains_energy
+    cycle: monthly
+
+automation:
+  # --------------------------------------------------------- water heater
+  - id: energy_water_heater_boost
+    alias: Energy - Water heater boost button
+    triggers:
+      - trigger: state
+        entity_id: input_button.water_heater_boost
+        not_from:
+          - unavailable
+          - unknown
+    actions:
+      - action: timer.start
+        target:
+          entity_id: timer.water_heater_boost
+    mode: single
+
+  - id: energy_water_heater_reconcile
+    alias: Energy - Water heater follows schedule, boost, mode and load
+    description: >
+      Instead of separate "turn on" / "turn off" automations, this one works
+      out what the heater SHOULD be doing and applies it whenever any input
+      changes, plus every 10 minutes and on start-up. A missed event or a
+      power cut can therefore never leave the heater on all day.
+        on  = (schedule block OR boost timer)
+              AND house not in Away/Vacation
+              AND no load shedding
+    triggers:
+      - trigger: schedule.block_started
+        target:
+          entity_id: schedule.water_heater
+      - trigger: schedule.block_ended
+        target:
+          entity_id: schedule.water_heater
+      - trigger: timer.started
+        target:
+          entity_id: timer.water_heater_boost
+      - trigger: timer.finished
+        target:
+          entity_id: timer.water_heater_boost
+      - trigger: timer.cancelled
+        target:
+          entity_id: timer.water_heater_boost
+      - trigger: state
+        entity_id:
+          - input_select.house_mode
+          - input_boolean.load_shed
+      - trigger: homeassistant
+        event: start
+      - trigger: time_pattern
+        minutes: "/10"
+    variables:
+      should_be_on: >
+        {{ (is_state('schedule.water_heater', 'on')
+            or is_state('timer.water_heater_boost', 'active'))
+           and states('input_select.house_mode') not in ['Away', 'Vacation']
+           and is_state('input_boolean.load_shed', 'off') }}
+    conditions:
+      # Only act when the relay is not already where it should be
+      - "{{ should_be_on != is_state('switch.water_heater', 'on') }}"
+    actions:
+      - action: "switch.turn_{{ 'on' if should_be_on else 'off' }}"
+        target:
+          entity_id: switch.water_heater
+    mode: queued
+    max: 5
+
+  # --------------------------------------------------------- load shedding
+  - id: energy_load_shed_start
+    alias: Energy - Shed the water heater when the house draws too much
+    description: >
+      Oven + A/C + washing machine + water heater can trip the main breaker.
+      Above the limit for 15 s, the water heater (the biggest load that can
+      wait) is paused.
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.mains_power
+        above: input_number.max_house_power
+        for:
+          seconds: 15
+    conditions:
+      - condition: state
+        entity_id: input_boolean.load_shed
+        state: "off"
+    actions:
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.load_shed
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: High power
+          message: >
+            The house is drawing {{ states('sensor.mains_power') | int(0) }} W.
+            Water heater paused until the load drops.
+    mode: single
+
+  - id: energy_load_shed_end
+    alias: Energy - Resume after load shedding
+    triggers:
+      - trigger: template
+        value_template: >
+          {{ states('sensor.mains_power') | float(0)
+             < states('input_number.max_house_power') | float(0) - 2000 }}
+        for:
+          minutes: 5
+    conditions:
+      - condition: state
+        entity_id: input_boolean.load_shed
+        state: "on"
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.load_shed
+    mode: single
+
+  # ------------------------------------------------------- washing machine
+  - id: energy_washer_cycle
+    alias: Energy - Washing machine finished
+    description: >
+      Running = above 10 W for a minute. Finished = below 3 W for 3 minutes
+      after that. The two-step check avoids false "finished" messages during
+      the soak pauses of a cycle.
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.washing_machine_power
+        above: 10
+        for:
+          minutes: 1
+        id: started
+      - trigger: numeric_state
+        entity_id: sensor.washing_machine_power
+        below: 3
+        for:
+          minutes: 3
+        id: finished
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: started
+            sequence:
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.washer_running
+          - conditions:
+              - condition: trigger
+                id: finished
+              - condition: state
+                entity_id: input_boolean.washer_running
+                state: "on"
+            sequence:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.washer_running
+              - action: notify.send_message
+                target:
+                  entity_id: notify.family
+                data:
+                  title: Washing machine
+                  message: The wash is done.
+    mode: queued
+
+  # ---------------------------------------------------------------- freezer
+  - id: energy_freezer_keep_on
+    alias: Energy - Freezer plug can never stay off
+    description: The freezer plug is for metering only; if anyone switches it off, it goes back on.
+    triggers:
+      - trigger: state
+        entity_id: switch.freezer
+        to: "off"
+    actions:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.freezer
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: Freezer
+          message: The freezer plug was switched off and has been turned back on.
+    mode: single
+
+  - id: energy_freezer_watchdog
+    alias: Energy - Freezer watchdog
+    description: >
+      Plug unreachable for 10 min = probably a power problem in the storage
+      room. Compressor not running for 4 hours = the freezer has stopped.
+    triggers:
+      - trigger: state
+        entity_id: switch.freezer
+        to: unavailable
+        for:
+          minutes: 10
+        id: offline
+      - trigger: numeric_state
+        entity_id: sensor.freezer_power
+        below: 5
+        for:
+          hours: 4
+        id: idle
+    actions:
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: "Freezer: check it now"
+          message: >
+            {{ 'The freezer plug has been offline for 10 minutes.'
+               if trigger.id == 'offline'
+               else 'The freezer compressor has not run for 4 hours.' }}
+    mode: single

@@ -1,0 +1,129 @@
+# =============================================================================
+#  SECURITY (Alarmo)
+#  Sensors: the existing magnetic contacts on every window and balcony door,
+#  plus the FP300 presence sensors as interior "motion" in Away mode.
+#  Which sensor is armed in which mode is set in the Alarmo panel itself; see
+#  docs/alarmo.md for the table.
+#
+#  Rule of thumb used here: the house may ARM itself, but it only DISARMS
+#  itself from Night mode, i.e. when the person is already inside.
+# =============================================================================
+
+automation:
+  - id: security_follow_house_mode
+    alias: Security - Alarm follows house mode
+    triggers:
+      - trigger: state
+        entity_id: input_select.house_mode
+        to:
+          - Away
+          - Vacation
+        id: away
+      - trigger: state
+        entity_id: input_select.house_mode
+        to: Night
+        id: night
+      - trigger: state
+        entity_id: input_select.house_mode
+        from: Night
+        to: Home
+        id: morning
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: away
+            sequence:
+              - action: alarmo.arm
+                data:
+                  entity_id: alarm_control_panel.home
+                  mode: away
+          - conditions:
+              - condition: trigger
+                id: night
+            sequence:
+              - action: alarmo.arm
+                data:
+                  entity_id: alarm_control_panel.home
+                  mode: night
+          - conditions:
+              - condition: trigger
+                id: morning
+              - condition: state
+                entity_id: alarm_control_panel.home
+                state: armed_night
+            sequence:
+              - action: alarmo.disarm
+                data:
+                  entity_id: alarm_control_panel.home
+                  code: !secret alarmo_code
+    mode: queued
+
+  - id: security_open_windows_on_leave
+    alias: Security - Warn about open windows when leaving
+    description: >
+      Lists every window or balcony door still open when the house goes to
+      Away or Night. All contacts carry the `windows` label.
+    triggers:
+      - trigger: state
+        entity_id: input_select.house_mode
+        to:
+          - Away
+          - Vacation
+          - Night
+    variables:
+      open_windows: >
+        {{ label_entities('windows') | select('is_state', 'on')
+           | map('state_attr', 'friendly_name') | list }}
+    conditions:
+      - "{{ open_windows | count > 0 }}"
+    actions:
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: "Open windows ({{ open_windows | count }})"
+          message: "{{ open_windows | join(', ') }}"
+    mode: single
+
+  - id: security_alarm_triggered
+    alias: Security - Alarm triggered
+    description: Every light in the apartment on, and a notification to everyone.
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.home
+        to: triggered
+    actions:
+      - action: light.turn_on
+        target:
+          floor_id: apartment
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: "ALARM"
+          message: >
+            Alarm triggered by
+            {{ (state_attr('alarm_control_panel.home', 'open_sensors') or {}).keys()
+               | map('state_attr', 'friendly_name') | join(', ') or 'unknown sensor' }}
+    mode: single
+
+  - id: security_state_notifications
+    alias: Security - Notify on arm / disarm
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.home
+        to:
+          - armed_away
+          - armed_night
+          - disarmed
+    actions:
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: Alarm
+          message: >
+            {{ {'armed_away': 'Armed (away)', 'armed_night': 'Armed (night)',
+                'disarmed': 'Disarmed'}[trigger.to_state.state] }}
+    mode: queued

@@ -1,0 +1,139 @@
+# =============================================================================
+#  HOUSE MODES
+#  One input_select is the "state of the home". Lighting, alarm, climate and
+#  the water heater all react to it, so each of them stays simple.
+#
+#    Home      someone is home and awake
+#    Night     everyone home has gone to bed
+#    Away      nobody home (automatic)
+#    Vacation  set by hand: like Away, plus water heater stays off
+# =============================================================================
+
+input_select:
+  house_mode:
+    name: House mode
+    icon: mdi:home-switch
+    options:
+      - Home
+      - Night
+      - Away
+      - Vacation
+
+input_boolean:
+  guest_mode:
+    name: Guest mode
+    icon: mdi:account-multiple
+    # On while a guest without the app is staying: blocks automatic Away.
+
+automation:
+  - id: house_mode_away
+    alias: House mode - Away when everyone has left
+    triggers:
+      - trigger: state
+        entity_id: zone.home
+        to: "0"
+        for:
+          minutes: 5
+    conditions:
+      - condition: state
+        entity_id: input_select.house_mode
+        state:
+          - Home
+          - Night
+      - condition: state
+        entity_id: input_boolean.guest_mode
+        state: "off"
+    actions:
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.house_mode
+        data:
+          option: Away
+    mode: single
+
+  - id: house_mode_arrive
+    alias: House mode - Home when someone arrives
+    triggers:
+      - trigger: state
+        entity_id: zone.home
+        from: "0"
+        not_to:
+          - unavailable
+          - unknown
+    conditions:
+      - condition: state
+        entity_id: input_select.house_mode
+        state:
+          - Away
+          - Vacation
+    actions:
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.house_mode
+        data:
+          option: Home
+    mode: single
+
+  - id: house_mode_night
+    alias: House mode - Night when the day zone goes quiet
+    description: >
+      After 22:30, once both the living room and the kitchen have been empty
+      for 20 minutes, everyone has gone to bed. 01:30 is a fallback in case
+      the 20-minute window was missed (e.g. a restart).
+    triggers:
+      - trigger: occupancy.cleared
+        target:
+          area_id:
+            - living_room
+            - kitchen
+        options:
+          behavior: all
+          for: "00:20:00"
+      - trigger: time
+        at: "01:30:00"
+    conditions:
+      - condition: time
+        after: "22:30:00"
+        before: "05:00:00"
+      - condition: state
+        entity_id: input_select.house_mode
+        state: Home
+      - condition: state
+        entity_id: binary_sensor.living_room_presence
+        state: "off"
+      - condition: state
+        entity_id: binary_sensor.kitchen_presence
+        state: "off"
+    actions:
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.house_mode
+        data:
+          option: Night
+    mode: single
+
+  - id: house_mode_morning
+    alias: House mode - Home in the morning
+    description: First presence in the kitchen or living room after 05:30 ends the night.
+    triggers:
+      - trigger: occupancy.detected
+        target:
+          area_id:
+            - kitchen
+            - living_room
+      - trigger: time
+        at: "10:00:00"
+    conditions:
+      - condition: time
+        after: "05:30:00"
+        before: "12:00:00"
+      - condition: state
+        entity_id: input_select.house_mode
+        state: Night
+    actions:
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.house_mode
+        data:
+          option: Home
+    mode: single

@@ -1,0 +1,141 @@
+# =============================================================================
+#  CLIMATE
+#  Multi-split heat pump: one 5-port outdoor unit in the light well and five
+#  concealed ducted indoor units above the plasterboard ceilings, one per room:
+#
+#    E1  study bedroom       2.6 kW   climate.study_bedroom
+#    E2  small bedroom       2.0 kW   climate.small_bedroom
+#    E3  double bedroom      2.6 kW   climate.double_bedroom
+#    E4  living room         2.6 kW   climate.living_room
+#    E5  kitchen / dining    3.5 kW   climate.kitchen
+#
+#  Each climate entity sits in the same HA area as its room's window contacts
+#  and FP300, so every automation below works per room through area_id().
+# =============================================================================
+
+automation:
+  # ------------------------------------------------------------ open window
+  - id: climate_window_open_pause
+    alias: Climate - Pause a room's unit while its window is open
+    description: >
+      A window or balcony door open for 2 minutes switches off the unit of that
+      room, after taking a snapshot of its settings. Nothing happens if the
+      unit was already off.
+    triggers:
+      - trigger: window.opened
+        target:
+          label_id: windows
+        options:
+          for: "00:02:00"
+      - trigger: door.opened
+        target:
+          label_id: windows
+        options:
+          for: "00:02:00"
+    variables:
+      room: "{{ area_id(trigger.entity_id) }}"
+      units: >
+        {{ area_entities(room) | select('match', 'climate\.')
+           | reject('is_state', 'off') | list }}
+    conditions:
+      - "{{ room is not none and units | count > 0 }}"
+    actions:
+      - action: scene.create
+        data:
+          scene_id: "climate_before_window_{{ room }}"
+          snapshot_entities: "{{ units }}"
+      - action: climate.turn_off
+        target:
+          entity_id: "{{ units }}"
+    mode: parallel
+
+  - id: climate_window_closed_resume
+    alias: Climate - Resume a room's unit when its windows are closed
+    triggers:
+      - trigger: window.closed
+        target:
+          label_id: windows
+      - trigger: door.closed
+        target:
+          label_id: windows
+    variables:
+      room: "{{ area_id(trigger.entity_id) }}"
+      snapshot: "scene.climate_before_window_{{ room }}"
+      still_open: >
+        {{ area_entities(room) | select('in', label_entities('windows'))
+           | select('is_state', 'on') | list | count }}
+    conditions:
+      # A freshly created scene's state is 'unknown' until it is activated, so
+      # check that the snapshot exists rather than looking at its state.
+      - "{{ room is not none and snapshot in states.scene | map(attribute='entity_id') | list }}"
+      - "{{ still_open == 0 }}"
+      # Don't restart a unit while nobody is home
+      - condition: state
+        entity_id: input_select.house_mode
+        state:
+          - Home
+          - Night
+    actions:
+      - action: scene.turn_on
+        target:
+          entity_id: "{{ snapshot }}"
+      - action: scene.delete
+        target:
+          entity_id: "{{ snapshot }}"
+    mode: parallel
+
+  # ------------------------------------------------------------- empty room
+  - id: climate_empty_room_off
+    alias: Climate - Switch off a unit when its room has been empty for 45 min
+    description: >
+      Saves energy when a door is left open or someone forgets the unit on.
+      Bedrooms are skipped in Night mode, because a sleeping person is very
+      still and the unit must not stop on them.
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.study_bedroom_presence
+          - binary_sensor.small_bedroom_presence
+          - binary_sensor.double_bedroom_presence
+          - binary_sensor.living_room_presence
+          - binary_sensor.kitchen_presence
+        to: "off"
+        for:
+          minutes: 45
+    variables:
+      room: "{{ area_id(trigger.entity_id) }}"
+      units: >
+        {{ area_entities(room) | select('match', 'climate\.')
+           | reject('is_state', 'off') | list }}
+      bedrooms:
+        - study_bedroom
+        - small_bedroom
+        - double_bedroom
+    conditions:
+      - "{{ units | count > 0 }}"
+      - "{{ not (is_state('input_select.house_mode', 'Night') and room in bedrooms) }}"
+    actions:
+      - action: climate.turn_off
+        target:
+          entity_id: "{{ units }}"
+    mode: parallel
+
+  # ---------------------------------------------------------------- away
+  - id: climate_away_off
+    alias: Climate - All units off when the house is empty
+    triggers:
+      - trigger: state
+        entity_id: input_select.house_mode
+        to:
+          - Away
+          - Vacation
+    actions:
+      - action: climate.turn_off
+        target:
+          entity_id:
+            - climate.study_bedroom
+            - climate.small_bedroom
+            - climate.double_bedroom
+            - climate.living_room
+            - climate.kitchen
+    mode: single
