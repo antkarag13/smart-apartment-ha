@@ -1,0 +1,68 @@
+/* Interactive apartment plan — styles for ha-floorplan.
+   Rules in dashboards/apartment.yaml set the state classes:
+   light-on/off, presence-on/off, climate-<hvac mode>, open-on/off, leak-on/off */
+#apartment { font-family: Inter, "Segoe UI", system-ui, sans-serif; }
+#apartment .bg { fill: #0b1119; }
+#apartment .deck { fill: url(#deck); }
+#apartment .common { fill: url(#stairs); stroke: #263244; stroke-width: 2; }
+#apartment .room { fill: #172231; }
+#apartment .wall { fill: none; stroke: #8fa3ba; stroke-width: 7; stroke-linejoin: round; }
+#apartment .zone { fill: none; stroke: #33445c; stroke-width: 2; stroke-dasharray: 6 8; }
+#apartment .label { fill: #c9d6e6; font-size: 17px; font-weight: 600; letter-spacing: .3px; }
+#apartment .label.dim, #apartment .muted { fill: #4c5d73; font-size: 15px; font-weight: 600; }
+#apartment .small { font-size: 12px; }
+
+/* lights: the whole room is the switch */
+#apartment .light { cursor: pointer; }
+#apartment .light .hit { fill: transparent; pointer-events: all; }
+#apartment .light .glow { opacity: 0; transition: opacity .45s ease; pointer-events: none; }
+#apartment .light.light-on .glow { opacity: .55; }
+#apartment .light:hover .hit { fill: rgba(255,255,255,.04); }
+#apartment .pendant .fixture { fill: #22324a; stroke: #3b4f6b; stroke-width: 2; pointer-events: none; }
+#apartment .pendant.light-on .glow { opacity: 1; }
+#apartment .pendant.light-on .fixture { fill: #6b5326; stroke: #ffcf73; }
+#apartment .strip .led { fill: #ffcf73; }
+#apartment .strip.light-off .led { fill: #2a3a52; opacity: 1; }
+#apartment .strip.light-on .led { opacity: 1; filter: drop-shadow(0 0 6px #ffb648); }
+
+/* presence */
+#apartment .presence { fill: #4b5d76; transition: fill .3s; }
+#apartment .presence .halo { fill: transparent; }
+#apartment .presence.presence-on { fill: #5eead4; }
+#apartment .presence.presence-on .halo { fill: rgba(94,234,212,.18); animation: breathe 2.4s ease-in-out infinite; }
+
+/* temperature / humidity */
+#apartment .temp { fill: #e8eef6; font-size: 24px; font-weight: 700; }
+#apartment .hum { fill: #7f93ac; font-size: 13px; font-weight: 600; }
+
+/* A/C units */
+#apartment .ac { cursor: pointer; }
+#apartment .ac circle { fill: #1e2b3d; stroke: #3d5068; stroke-width: 2; }
+#apartment .ac path { stroke: #5d7290; stroke-width: 2.2; stroke-linecap: round; fill: none; }
+#apartment .ac.climate-heat circle { fill: #4a2414; stroke: #ff8a4c; }
+#apartment .ac.climate-heat path { stroke: #ffb38a; }
+#apartment .ac.climate-cool circle { fill: #11314d; stroke: #4cb3ff; }
+#apartment .ac.climate-cool path { stroke: #9bd4ff; animation: spin 6s linear infinite; transform-origin: 0 0; }
+#apartment .ac.climate-dry circle,
+#apartment .ac.climate-fan_only circle { fill: #10352f; stroke: #34d399; }
+
+/* windows & balcony doors */
+#apartment .window { stroke-width: 9; stroke-linecap: round; transition: stroke .3s; }
+#apartment .window.open-off { stroke: #6fb5ff; }
+#apartment .window.open-on { stroke: #ff4d5e; animation: blink 1s steps(2, start) infinite; }
+
+/* leaks */
+#apartment .leak { fill: #3aa0ff; opacity: 0; }
+#apartment .leak .ring { fill: rgba(58,160,255,.25); }
+#apartment .leak.leak-on { opacity: 1; }
+#apartment .leak.leak-on .ring { animation: ping 1.2s ease-out infinite; transform-origin: 0 0; }
+
+/* status panel */
+#apartment .status-k { fill: #5b6e87; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+#apartment .status-v { fill: #e8eef6; font-size: 16px; font-weight: 700; }
+
+@keyframes breathe { 50% { opacity: .35; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes blink { to { opacity: .35; } }
+@keyframes ping { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #apartment * { animation: none !important; } }

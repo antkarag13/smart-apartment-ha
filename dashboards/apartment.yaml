@@ -1,7 +1,12 @@
 # Lovelace dashboard (YAML mode). Registered in configuration.example.yaml.
-# The floor plan is drawing 9γ of the renovation, served from
-# www/floorplan/apartment.svg. Icons sit on the rooms; tap a light to toggle
-# it, a window or leak icon appears only while it is open / wet.
+#
+# The Floor plan view uses ha-floorplan (HACS → Frontend → "Floorplan"):
+# every room, lamp, sensor and A/C unit in www/floorplan/apartment.svg has the
+# entity ID as its element id, and the rules below set CSS classes from the
+# entity's state (styles in www/floorplan/apartment.css).
+#   - tap a room → its light toggles; hold → more-info
+#   - presence glows teal, A/C icons turn orange (heat) / blue (cool)
+#   - an open window blinks red, a wet leak sensor pulses blue
 
 title: Apartment
 views:
@@ -10,467 +15,149 @@ views:
   icon: mdi:floor-plan
   panel: true
   cards:
-  - type: picture-elements
-    image: /local/floorplan/apartment.svg
-    elements:
-    - type: state-icon
-      entity: light.study_bedroom_ceiling
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 32.4%
-        top: 19.6%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: binary_sensor.study_bedroom_presence
-      icon: mdi:account
-      style:
-        left: 36.3%
-        top: 19.6%
-        --mdc-icon-size: 22px
-    - type: state-label
-      entity: sensor.study_bedroom_temperature
-      style:
-        left: 32.4%
-        top: 23.5%
-        background: rgba(255,255,255,0.85)
-        border-radius: 10px
-        padding: 0 6px
-        color: '#222'
-        font-size: 13px
-        font-weight: '600'
-    - type: state-icon
-      entity: light.small_bedroom_ceiling
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 10.9%
-        top: 28.3%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: binary_sensor.small_bedroom_presence
-      icon: mdi:account
-      style:
-        left: 14.8%
-        top: 28.3%
-        --mdc-icon-size: 22px
-    - type: state-label
-      entity: sensor.small_bedroom_temperature
-      style:
-        left: 10.9%
-        top: 31.7%
-        background: rgba(255,255,255,0.85)
-        border-radius: 10px
-        padding: 0 6px
-        color: '#222'
-        font-size: 13px
-        font-weight: '600'
-    - type: state-icon
-      entity: light.double_bedroom_ceiling
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 9.9%
-        top: 45.7%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: binary_sensor.double_bedroom_presence
-      icon: mdi:account
-      style:
-        left: 13.8%
-        top: 45.7%
-        --mdc-icon-size: 22px
-    - type: state-label
-      entity: sensor.double_bedroom_temperature
-      style:
-        left: 9.9%
-        top: 49.1%
-        background: rgba(255,255,255,0.85)
-        border-radius: 10px
-        padding: 0 6px
-        color: '#222'
-        font-size: 13px
-        font-weight: '600'
-    - type: state-icon
-      entity: light.hallway
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 40.2%
-        top: 38.9%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: light.bathroom
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 50.4%
-        top: 27.4%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: binary_sensor.bathroom_presence
-      icon: mdi:account
-      style:
-        left: 54.4%
-        top: 27.4%
-        --mdc-icon-size: 22px
-    - type: state-icon
-      entity: light.wc
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 35.3%
-        top: 62.1%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: binary_sensor.wc_presence
-      icon: mdi:account
-      style:
-        left: 36.7%
-        top: 70.3%
-        --mdc-icon-size: 22px
-    - type: state-icon
-      entity: light.storage
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 35.8%
-        top: 54.4%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: binary_sensor.storage_presence
-      icon: mdi:account
-      style:
-        left: 38.7%
-        top: 51.5%
-        --mdc-icon-size: 22px
-    - type: state-icon
-      entity: light.kitchen_ceiling
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 50.6%
-        top: 55.4%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: binary_sensor.kitchen_presence
-      icon: mdi:account
-      style:
-        left: 50.6%
-        top: 59.3%
-        --mdc-icon-size: 22px
-    - type: state-label
-      entity: sensor.kitchen_temperature
-      style:
-        left: 50.6%
-        top: 63.1%
-        background: rgba(255,255,255,0.85)
-        border-radius: 10px
-        padding: 0 6px
-        color: '#222'
-        font-size: 13px
-        font-weight: '600'
-    - type: state-icon
-      entity: light.dining_pendant
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 69.0%
-        top: 38.0%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: binary_sensor.dining_presence
-      icon: mdi:account
-      style:
-        left: 72.9%
-        top: 41.8%
-        --mdc-icon-size: 22px
-    - type: state-label
-      entity: sensor.dining_temperature
-      style:
-        left: 69.0%
-        top: 41.8%
-        background: rgba(255,255,255,0.85)
-        border-radius: 10px
-        padding: 0 6px
-        color: '#222'
-        font-size: 13px
-        font-weight: '600'
-    - type: state-icon
-      entity: light.living_room_ceiling
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 78.3%
-        top: 63.1%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: light.kitchen_island_pendant
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 57.8%
-        top: 59.2%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: light.kitchen_counter_led
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 45.1%
-        top: 64.0%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: light.balcony_east
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 94.9%
-        top: 41.8%
-        --mdc-icon-size: 30px
-    - type: state-icon
-      entity: light.balcony_south
-      tap_action:
-        action: toggle
-      hold_action:
-        action: more-info
-      style:
-        left: 62.7%
-        top: 90.1%
-        --mdc-icon-size: 30px
-    - type: conditional
-      conditions:
-      - entity: binary_sensor.small_bedroom_window
-        state: 'on'
-      elements:
-      - type: icon
-        icon: mdi:window-open-variant
-        tap_action:
-          action: more-info
-          entity: binary_sensor.small_bedroom_window
-        style:
-          left: 3.9%
-          top: 16.5%
-          color: '#e53935'
-          --mdc-icon-size: 26px
-          filter: drop-shadow(0 0 3px white)
-    - type: conditional
-      conditions:
-      - entity: binary_sensor.study_bedroom_window
-        state: 'on'
-      elements:
-      - type: icon
-        icon: mdi:window-open-variant
-        tap_action:
-          action: more-info
-          entity: binary_sensor.study_bedroom_window
-        style:
-          left: 20.0%
-          top: 10.2%
-          color: '#e53935'
-          --mdc-icon-size: 26px
-          filter: drop-shadow(0 0 3px white)
-    - type: conditional
-      conditions:
-      - entity: binary_sensor.bathroom_window
-        state: 'on'
-      elements:
-      - type: icon
-        icon: mdi:window-open-variant
-        tap_action:
-          action: more-info
-          entity: binary_sensor.bathroom_window
-        style:
-          left: 49.6%
-          top: 12.7%
-          color: '#e53935'
-          --mdc-icon-size: 26px
-          filter: drop-shadow(0 0 3px white)
-    - type: conditional
-      conditions:
-      - entity: binary_sensor.balcony_east_door
-        state: 'on'
-      elements:
-      - type: icon
-        icon: mdi:window-open-variant
-        tap_action:
-          action: more-info
-          entity: binary_sensor.balcony_east_door
-        style:
-          left: 89.2%
-          top: 30.0%
-          color: '#e53935'
-          --mdc-icon-size: 26px
-          filter: drop-shadow(0 0 3px white)
-    - type: conditional
-      conditions:
-      - entity: binary_sensor.living_room_window
-        state: 'on'
-      elements:
-      - type: icon
-        icon: mdi:window-open-variant
-        tap_action:
-          action: more-info
-          entity: binary_sensor.living_room_window
-        style:
-          left: 89.5%
-          top: 60.8%
-          color: '#e53935'
-          --mdc-icon-size: 26px
-          filter: drop-shadow(0 0 3px white)
-    - type: conditional
-      conditions:
-      - entity: binary_sensor.double_bedroom_window
-        state: 'on'
-      elements:
-      - type: icon
-        icon: mdi:window-open-variant
-        tap_action:
-          action: more-info
-          entity: binary_sensor.double_bedroom_window
-        style:
-          left: 12.6%
-          top: 71.0%
-          color: '#e53935'
-          --mdc-icon-size: 26px
-          filter: drop-shadow(0 0 3px white)
-    - type: conditional
-      conditions:
-      - entity: binary_sensor.kitchen_window
-        state: 'on'
-      elements:
-      - type: icon
-        icon: mdi:window-open-variant
-        tap_action:
-          action: more-info
-          entity: binary_sensor.kitchen_window
-        style:
-          left: 45.1%
-          top: 78.2%
-          color: '#e53935'
-          --mdc-icon-size: 26px
-          filter: drop-shadow(0 0 3px white)
-    - type: conditional
-      conditions:
-      - entity: binary_sensor.balcony_south_door
-        state: 'on'
-      elements:
-      - type: icon
-        icon: mdi:window-open-variant
-        tap_action:
-          action: more-info
-          entity: binary_sensor.balcony_south_door
-        style:
-          left: 68.5%
-          top: 83.3%
-          color: '#e53935'
-          --mdc-icon-size: 26px
-          filter: drop-shadow(0 0 3px white)
-    - type: conditional
-      conditions:
-      - entity: binary_sensor.storage_leak
-        state: 'on'
-      elements:
-      - type: icon
-        icon: mdi:water-alert
-        tap_action:
-          action: more-info
-          entity: binary_sensor.storage_leak
-        style:
-          left: 33.4%
-          top: 57.3%
-          color: '#1e88e5'
-          --mdc-icon-size: 26px
-          filter: drop-shadow(0 0 3px white)
-    - type: conditional
-      conditions:
-      - entity: binary_sensor.kitchen_sink_leak
-        state: 'on'
-      elements:
-      - type: icon
-        icon: mdi:water-alert
-        tap_action:
-          action: more-info
-          entity: binary_sensor.kitchen_sink_leak
-        style:
-          left: 50.0%
-          top: 76.8%
-          color: '#1e88e5'
-          --mdc-icon-size: 26px
-          filter: drop-shadow(0 0 3px white)
-    - type: state-label
-      entity: input_select.house_mode
-      prefix: 'Mode: '
-      style:
-        left: 2%
-        top: 2%
-        transform: none
-        background: rgba(255,255,255,0.85)
-        border-radius: 10px
-        padding: 0 6px
-        color: '#222'
-        font-size: 13px
-        font-weight: '600'
-    - type: state-icon
-      entity: alarm_control_panel.home
-      tap_action:
-        action: more-info
-      style:
-        left: 2%
-        top: 7%
-        transform: none
-        --mdc-icon-size: 28px
-    - type: state-label
-      entity: sensor.mains_power
-      style:
-        left: 7%
-        top: 7.6%
-        transform: none
-        background: rgba(255,255,255,0.85)
-        border-radius: 10px
-        padding: 0 6px
-        color: '#222'
-        font-size: 13px
-        font-weight: '600'
-    - type: state-label
-      entity: sensor.electricity_cost_today
-      prefix: 'Today '
-      style:
-        left: 2%
-        top: 12%
-        transform: none
-        background: rgba(255,255,255,0.85)
-        border-radius: 10px
-        padding: 0 6px
-        color: '#222'
-        font-size: 13px
-        font-weight: '600'
+  - type: custom:floorplan-card
+    full_height: true
+    config:
+      image: /local/floorplan/apartment.svg
+      stylesheet: /local/floorplan/apartment.css
+      rules:
+      - name: 'Lights: tap a room to switch its light'
+        entities:
+        - light.study_bedroom_ceiling
+        - light.small_bedroom_ceiling
+        - light.double_bedroom_ceiling
+        - light.hallway
+        - light.bathroom
+        - light.storage
+        - light.wc
+        - light.kitchen_ceiling
+        - light.dining_pendant
+        - light.living_room_ceiling
+        - light.kitchen_island_pendant
+        - light.kitchen_counter_led
+        - light.balcony_east
+        - light.balcony_south
+        tap_action: toggle
+        hold_action: more-info
+        hover_action: hover-info
+        state_action:
+          action: call-service
+          service: floorplan.class_set
+          service_data:
+            class: light-${entity.state}
+      - name: Presence
+        entities:
+        - binary_sensor.study_bedroom_presence
+        - binary_sensor.small_bedroom_presence
+        - binary_sensor.double_bedroom_presence
+        - binary_sensor.bathroom_presence
+        - binary_sensor.wc_presence
+        - binary_sensor.storage_presence
+        - binary_sensor.kitchen_presence
+        - binary_sensor.dining_presence
+        state_action:
+          action: call-service
+          service: floorplan.class_set
+          service_data:
+            class: presence-${entity.state}
+      - name: Room temperatures
+        entities:
+        - sensor.study_bedroom_temperature
+        - sensor.small_bedroom_temperature
+        - sensor.double_bedroom_temperature
+        - sensor.kitchen_temperature
+        - sensor.dining_temperature
+        tap_action: more-info
+        state_action:
+          action: call-service
+          service: floorplan.text_set
+          service_data:
+            text: '${[''unavailable'',''unknown''].includes(entity.state) ? ''–'' : Number(entity.state).toFixed(1) + ''°''}'
+      - name: Room humidity
+        entities:
+        - sensor.study_bedroom_humidity
+        - sensor.small_bedroom_humidity
+        - sensor.double_bedroom_humidity
+        - sensor.kitchen_humidity
+        - sensor.dining_humidity
+        state_action:
+          action: call-service
+          service: floorplan.text_set
+          service_data:
+            text: '${[''unavailable'',''unknown''].includes(entity.state) ? ''– %'' : Math.round(entity.state) + '' %''}'
+      - name: 'A/C units: colour by mode, tap for the thermostat'
+        entities:
+        - climate.study_bedroom
+        - climate.small_bedroom
+        - climate.double_bedroom
+        - climate.living_room
+        - climate.kitchen_dining
+        tap_action: more-info
+        hover_action: hover-info
+        state_action:
+          action: call-service
+          service: floorplan.class_set
+          service_data:
+            class: climate-${entity.state}
+      - name: Windows and balcony doors
+        entities:
+        - binary_sensor.study_bedroom_window
+        - binary_sensor.small_bedroom_window
+        - binary_sensor.bathroom_window
+        - binary_sensor.double_bedroom_window
+        - binary_sensor.kitchen_window
+        - binary_sensor.living_room_window
+        - binary_sensor.balcony_east_door
+        - binary_sensor.balcony_south_door
+        hover_action: hover-info
+        state_action:
+          action: call-service
+          service: floorplan.class_set
+          service_data:
+            class: open-${entity.state}
+      - name: Leak sensors
+        entities:
+        - binary_sensor.storage_leak
+        - binary_sensor.kitchen_sink_leak
+        state_action:
+          action: call-service
+          service: floorplan.class_set
+          service_data:
+            class: leak-${entity.state}
+      - name: Status panel
+        entities:
+        - input_select.house_mode
+        tap_action: more-info
+        state_action:
+          action: call-service
+          service: floorplan.text_set
+          service_data:
+            text: ${entity.state}
+      - entities:
+        - alarm_control_panel.home
+        tap_action: more-info
+        state_action:
+          action: call-service
+          service: floorplan.text_set
+          service_data:
+            text: ${({disarmed:'Off',armed_away:'Away',armed_night:'Night',arming:'Arming',pending:'Entry',triggered:'ALARM'})[entity.state]
+              || entity.state}
+      - entities:
+        - sensor.mains_power
+        tap_action: more-info
+        state_action:
+          action: call-service
+          service: floorplan.text_set
+          service_data:
+            text: ${Math.round(entity.state) + ' W'}
+      - entities:
+        - sensor.electricity_cost_today
+        tap_action: more-info
+        state_action:
+          action: call-service
+          service: floorplan.text_set
+          service_data:
+            text: ${Number(entity.state).toFixed(2) + ' €'}
 - title: Climate
   path: climate
   icon: mdi:thermostat

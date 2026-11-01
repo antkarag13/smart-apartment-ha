@@ -10,6 +10,10 @@ apartment runs itself.
 > names in [docs/devices.md](docs/devices.md); pair the devices, rename them,
 > and the automations work unchanged.
 
+![Interactive floor plan](docs/floorplan.png)
+
+*Open [`docs/preview.html`](docs/preview.html) in a browser for a clickable demo.*
+
 ## What it does
 
 | | |
@@ -29,7 +33,7 @@ apartment runs itself.
 | **Freezer** | A wired probe inside plus the plug's power reading: warns at -15 °C, alarms at -10 °C, and tells you *why* (lid open, compressor dead, or power cut). Its plug turns itself back on if anyone switches it off. |
 | **Appliances** | "Wash finished" notification without false alarms during soak pauses. |
 | **Cost in euros** | Today's and this month's electricity cost, and a forecast of the month's bill at the current pace; a report on the 1st of each month. |
-| **Floor-plan dashboard** | The renovation drawing itself as the dashboard: lights, presence and temperatures on each room, tap to toggle; open windows and leaks appear in red / blue only when they happen. |
+| **Interactive floor plan** | A dark, hand-drawn SVG of the apartment as the main dashboard: tap a room to switch its light and watch it glow; presence glows teal, A/C units turn orange or blue with their mode, temperatures and humidity sit in each room, open windows blink red and a wet leak sensor pulses blue. |
 | **Maintenance** | A/C filter reminders by each unit's actual running hours, with the location of its access hatch; weekly low-battery report; alert when any mains-powered Zigbee device drops off the mesh. |
 
 ## How the pieces fit
@@ -84,7 +88,7 @@ packages/                   one self-contained file per feature (helpers + autom
   water.yaml                leak detection, washer lockout
   maintenance.yaml          filters, batteries, offline devices
 dashboards/apartment.yaml   floor plan, climate, energy and home views
-www/floorplan/apartment.svg drawing 9γ, used as the dashboard background
+www/floorplan/              interactive SVG plan + its CSS (ha-floorplan)
 docs/
   devices.md                bill of materials, areas, entity map, install notes
   alarmo.md                 which sensor is armed in which mode
@@ -122,7 +126,7 @@ secrets.example.yaml
 6. Set **A/C filter cleaning interval** to about 300 h. A new `input_number` starts at
    its minimum (50 h), which would ask for filter cleaning far too early.
 
-Requires Home Assistant 2026.7 or newer and the [Alarmo](https://github.com/nielsfaber/alarmo) integration (HACS).
+Requires Home Assistant 2026.7 or newer, plus from HACS: the [Alarmo](https://github.com/nielsfaber/alarmo) integration and the [ha-floorplan](https://github.com/ExperienceLovelace/ha-floorplan) card.
 
 ## License
 

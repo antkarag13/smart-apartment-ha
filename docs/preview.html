@@ -1,0 +1,388 @@
+<title>Smart Apartment Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: plan as the hero on the left, a narrow "simulate" rail on the right; stacks on phones. Single dark look, matching the HA dashboard. */
+:root{
+  --bg:#070c13; --panel:#0e1621; --line:#1f2c3d; --fg:#e6edf6; --muted:#8193aa;
+  --amber:#ffb648; --teal:#5eead4; --red:#ff4d5e; --blue:#3aa0ff;
+  --display:"Sora", "Segoe UI", system-ui, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme:dark;
+}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:15px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 32px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+header{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px}
+h1{font-family:var(--display);font-size:clamp(22px,3vw,30px);font-weight:700;margin:0;letter-spacing:-.3px;text-wrap:balance}
+.sub{color:var(--muted);margin:0;max-width:62ch}
+.plan{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;min-width:0}
+.plan svg{display:block;width:100%;height:auto}
+#apartment{font-family:var(--body)}
+#apartment .temp,#apartment .status-v{font-family:var(--display)}
+aside{display:flex;flex-direction:column;gap:16px}
+.group{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.group h2{font-family:var(--mono);font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:0;font-weight:500}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.row label{cursor:pointer}
+select,button{font:inherit;color:var(--fg);background:#152031;border:1px solid var(--line);border-radius:9px;padding:7px 10px}
+button{cursor:pointer}
+button:hover,select:hover{border-color:#34485f}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.seg button[aria-pressed="true"]{background:#1d3a4a;border-color:var(--teal);color:var(--teal)}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
+.hint{color:var(--muted);font-size:13px;margin:0}
+.log{font-family:var(--mono);font-size:12px;color:var(--muted);min-height:3.2em;margin:0}
+.log b{color:var(--fg);font-weight:500}
+.legend{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13px;color:var(--muted);align-items:center}
+.sw{width:14px;height:14px;border-radius:4px}
+@media (max-width:860px){.wrap{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>
+/* Interactive apartment plan — styles for ha-floorplan.
+   Rules in dashboards/apartment.yaml set the state classes:
+   light-on/off, presence-on/off, climate-<hvac mode>, open-on/off, leak-on/off */
+#apartment { font-family: Inter, "Segoe UI", system-ui, sans-serif; }
+#apartment .bg { fill: #0b1119; }
+#apartment .deck { fill: url(#deck); }
+#apartment .common { fill: url(#stairs); stroke: #263244; stroke-width: 2; }
+#apartment .room { fill: #172231; }
+#apartment .wall { fill: none; stroke: #8fa3ba; stroke-width: 7; stroke-linejoin: round; }
+#apartment .zone { fill: none; stroke: #33445c; stroke-width: 2; stroke-dasharray: 6 8; }
+#apartment .label { fill: #c9d6e6; font-size: 17px; font-weight: 600; letter-spacing: .3px; }
+#apartment .label.dim, #apartment .muted { fill: #4c5d73; font-size: 15px; font-weight: 600; }
+#apartment .small { font-size: 12px; }
+
+/* lights: the whole room is the switch */
+#apartment .light { cursor: pointer; }
+#apartment .light .hit { fill: transparent; pointer-events: all; }
+#apartment .light .glow { opacity: 0; transition: opacity .45s ease; pointer-events: none; }
+#apartment .light.light-on .glow { opacity: .55; }
+#apartment .light:hover .hit { fill: rgba(255,255,255,.04); }
+#apartment .pendant .fixture { fill: #22324a; stroke: #3b4f6b; stroke-width: 2; pointer-events: none; }
+#apartment .pendant.light-on .glow { opacity: 1; }
+#apartment .pendant.light-on .fixture { fill: #6b5326; stroke: #ffcf73; }
+#apartment .strip .led { fill: #ffcf73; }
+#apartment .strip.light-off .led { fill: #2a3a52; opacity: 1; }
+#apartment .strip.light-on .led { opacity: 1; filter: drop-shadow(0 0 6px #ffb648); }
+
+/* presence */
+#apartment .presence { fill: #4b5d76; transition: fill .3s; }
+#apartment .presence .halo { fill: transparent; }
+#apartment .presence.presence-on { fill: #5eead4; }
+#apartment .presence.presence-on .halo { fill: rgba(94,234,212,.18); animation: breathe 2.4s ease-in-out infinite; }
+
+/* temperature / humidity */
+#apartment .temp { fill: #e8eef6; font-size: 24px; font-weight: 700; }
+#apartment .hum { fill: #7f93ac; font-size: 13px; font-weight: 600; }
+
+/* A/C units */
+#apartment .ac { cursor: pointer; }
+#apartment .ac circle { fill: #1e2b3d; stroke: #3d5068; stroke-width: 2; }
+#apartment .ac path { stroke: #5d7290; stroke-width: 2.2; stroke-linecap: round; fill: none; }
+#apartment .ac.climate-heat circle { fill: #4a2414; stroke: #ff8a4c; }
+#apartment .ac.climate-heat path { stroke: #ffb38a; }
+#apartment .ac.climate-cool circle { fill: #11314d; stroke: #4cb3ff; }
+#apartment .ac.climate-cool path { stroke: #9bd4ff; animation: spin 6s linear infinite; transform-origin: 0 0; }
+#apartment .ac.climate-dry circle,
+#apartment .ac.climate-fan_only circle { fill: #10352f; stroke: #34d399; }
+
+/* windows & balcony doors */
+#apartment .window { stroke-width: 9; stroke-linecap: round; transition: stroke .3s; }
+#apartment .window.open-off { stroke: #6fb5ff; }
+#apartment .window.open-on { stroke: #ff4d5e; animation: blink 1s steps(2, start) infinite; }
+
+/* leaks */
+#apartment .leak { fill: #3aa0ff; opacity: 0; }
+#apartment .leak .ring { fill: rgba(58,160,255,.25); }
+#apartment .leak.leak-on { opacity: 1; }
+#apartment .leak.leak-on .ring { animation: ping 1.2s ease-out infinite; transform-origin: 0 0; }
+
+/* status panel */
+#apartment .status-k { fill: #5b6e87; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+#apartment .status-v { fill: #e8eef6; font-size: 16px; font-weight: 700; }
+
+@keyframes breathe { 50% { opacity: .35; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes blink { to { opacity: .35; } }
+@keyframes ping { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #apartment * { animation: none !important; } }
+
+</style>
+<div class="wrap">
+  <header>
+    <h1>Smart Apartment Plan</h1>
+    <p class="sub">Preview of the Home Assistant floor plan. Tap a room to switch its light, tap an A/C icon to change its mode, and use the panel to simulate sensors.</p>
+  </header>
+  <div class="plan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 920" id="apartment">
+<defs>
+  <radialGradient id="glow" cx="50%" cy="45%" r="70%">
+    <stop offset="0" stop-color="#ffd27a" stop-opacity=".95"/>
+    <stop offset=".6" stop-color="#ffb648" stop-opacity=".55"/>
+    <stop offset="1" stop-color="#ff9f2e" stop-opacity=".25"/>
+  </radialGradient>
+  <radialGradient id="pendant" r="50%"><stop offset="0" stop-color="#ffe2a3" stop-opacity=".95"/><stop offset="1" stop-color="#ffb648" stop-opacity="0"/></radialGradient>
+  <pattern id="deck" patternUnits="userSpaceOnUse" width="14" height="14"><rect width="14" height="14" fill="#141d29"/><path d="M0,14 L14,0" stroke="#1f2a38" stroke-width="2"/></pattern>
+  <pattern id="stairs" patternUnits="userSpaceOnUse" width="18" height="18"><rect width="18" height="18" fill="#121923"/><path d="M0,9 H18" stroke="#1d2735" stroke-width="2"/></pattern>
+
+  <clipPath id="clip-study_bedroom"><polygon points="180,30 405,30 405,300 180,300"/></clipPath>
+  <clipPath id="clip-small_bedroom"><polygon points="25,150 176,150 176,385 25,385"/></clipPath>
+  <clipPath id="clip-bathroom"><polygon points="415,118 522,118 522,300 415,300"/></clipPath>
+  <clipPath id="clip-hallway"><polygon points="184,312 532,312 532,396 184,396"/></clipPath>
+  <clipPath id="clip-double_bedroom"><polygon points="25,404 270,404 270,683 25,625"/></clipPath>
+  <clipPath id="clip-storage"><polygon points="280,404 370,404 370,524 280,524"/></clipPath>
+  <clipPath id="clip-wc"><polygon points="280,532 370,532 370,706 280,685"/></clipPath>
+  <clipPath id="clip-kitchen"><polygon points="378,404 540,404 540,746 378,708"/></clipPath>
+  <clipPath id="clip-dining"><polygon points="540,210 795,210 795,404 540,404"/></clipPath>
+  <clipPath id="clip-living"><polygon points="540,404 795,404 795,806 540,746"/></clipPath>
+  <clipPath id="clip-be"><polygon points="818,30 890,30 890,835 818,812"/></clipPath>
+  <clipPath id="clip-bs"><polygon points="5,621 818,811 890,835 890,905 5,720"/></clipPath>
+</defs>
+<rect class="bg" width="900" height="920"/>
+<polygon class="deck" points="5,10 170,10 170,140 5,140"/>
+<polygon class="deck" id="area.balcony_east" points="818,30 890,30 890,835 818,811"/>
+<polygon class="deck" id="area.balcony_south" points="5,621 818,811 890,835 890,905 5,720"/>
+<polygon class="common" points="540,30 795,30 795,205 540,205"/><text class="muted" x="667" y="122" text-anchor="middle">Stairs</text>
+<polygon class="common" points="415,30 522,30 522,110 415,110"/><text class="muted small" x="468" y="75" text-anchor="middle">Light well</text>
+<g id="rooms">
+  <polygon class="room" id="room.study_bedroom" points="180,30 405,30 405,300 180,300"/>
+  <polygon class="room" id="room.small_bedroom" points="25,150 176,150 176,385 25,385"/>
+  <polygon class="room" id="room.bathroom" points="415,118 522,118 522,300 415,300"/>
+  <polygon class="room" id="room.hallway" points="184,312 532,312 532,396 184,396"/>
+  <polygon class="room" id="room.double_bedroom" points="25,404 270,404 270,683 25,625"/>
+  <polygon class="room" id="room.storage" points="280,404 370,404 370,524 280,524"/>
+  <polygon class="room" id="room.wc" points="280,532 370,532 370,706 280,685"/>
+  <polygon class="room" id="room.kitchen" points="378,404 540,404 540,746 378,708"/>
+  <polygon class="room" id="room.dining" points="540,210 795,210 795,404 540,404"/>
+  <polygon class="room" id="room.living" points="540,404 795,404 795,806 540,746"/>
+</g>
+<g id="lights">
+  <g id="light.study_bedroom_ceiling" class="light light-off"><polygon class="hit" points="180,30 405,30 405,300 180,300"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-study_bedroom)"/></g>
+  <g id="light.small_bedroom_ceiling" class="light light-off"><polygon class="hit" points="25,150 176,150 176,385 25,385"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-small_bedroom)"/></g>
+  <g id="light.double_bedroom_ceiling" class="light light-off"><polygon class="hit" points="25,404 270,404 270,683 25,625"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-double_bedroom)"/></g>
+  <g id="light.hallway" class="light light-off"><polygon class="hit" points="184,312 532,312 532,396 184,396"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-hallway)"/></g>
+  <g id="light.bathroom" class="light light-off"><polygon class="hit" points="415,118 522,118 522,300 415,300"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-bathroom)"/></g>
+  <g id="light.storage" class="light light-off"><polygon class="hit" points="280,404 370,404 370,524 280,524"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-storage)"/></g>
+  <g id="light.wc" class="light light-off"><polygon class="hit" points="280,532 370,532 370,706 280,685"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-wc)"/></g>
+  <g id="light.kitchen_ceiling" class="light light-off"><polygon class="hit" points="378,404 540,404 540,746 378,708"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-kitchen)"/></g>
+  <g id="light.dining_pendant" class="light light-off"><polygon class="hit" points="540,210 795,210 795,404 540,404"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-dining)"/></g>
+  <g id="light.living_room_ceiling" class="light light-off"><polygon class="hit" points="540,404 795,404 795,806 540,746"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-living)"/></g>
+  <g id="light.kitchen_island_pendant" class="light pendant light-off"><circle class="hit" cx="515" cy="545" r="48"/><circle class="glow" cx="515" cy="545" r="70" fill="url(#pendant)"/><rect class="fixture" x="490" y="500" width="50" height="90" rx="8"/></g>
+  <g id="light.kitchen_counter_led" class="light strip light-off"><rect class="hit" x="380" y="440" width="26" height="240"/><rect class="glow led" x="386" y="446" width="8" height="228" rx="4"/></g>
+  <g id="light.balcony_east" class="light light-off"><polygon class="hit" points="818,30 890,30 890,835 818,812"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-be)"/></g>
+  <g id="light.balcony_south" class="light light-off"><polygon class="hit" points="5,621 818,811 890,835 890,905 5,720"/><rect class="glow" x="0" y="0" width="900" height="920" fill="url(#glow)" clip-path="url(#clip-bs)"/></g>
+</g>
+<g id="walls" pointer-events="none">
+  <polygon class="wall" points="180,30 405,30 405,300 180,300"/>
+  <polygon class="wall" points="25,150 176,150 176,385 25,385"/>
+  <polygon class="wall" points="415,118 522,118 522,300 415,300"/>
+  <polygon class="wall" points="184,312 532,312 532,396 184,396"/>
+  <polygon class="wall" points="25,404 270,404 270,683 25,625"/>
+  <polygon class="wall" points="280,404 370,404 370,524 280,524"/>
+  <polygon class="wall" points="280,532 370,532 370,706 280,685"/>
+  <polygon class="wall" points="540,210 795,210 795,806 378,708 378,404 540,404"/>
+  <polyline class="zone" points="540,746 540,404 795,404"/>
+</g>
+<g id="labels" pointer-events="none">
+  <text class="label" x="292" y="165" text-anchor="middle">Study</text>
+  <text class="label" x="100" y="268" text-anchor="middle">Bedroom</text>
+  <text class="label" x="468" y="209" text-anchor="middle">Bath</text>
+  <text class="label" x="300" y="360" text-anchor="middle">Hallway</text>
+  <text class="label" x="147" y="520" text-anchor="middle">Master bedroom</text>
+  <text class="label" x="325" y="464" text-anchor="middle">Storage</text>
+  <text class="label" x="325" y="614" text-anchor="middle">WC</text>
+  <text class="label" x="455" y="600" text-anchor="middle">Kitchen</text>
+  <text class="label" x="668" y="307" text-anchor="middle">Dining</text>
+  <text class="label" x="667" y="620" text-anchor="middle">Living room</text>
+  <text class="label dim" x="855" y="440" text-anchor="middle" transform="rotate(90 855 440)">Balcony</text>
+  <text class="label dim" x="430" y="800" text-anchor="middle" transform="rotate(13.2 430 800)">Balcony</text>
+</g>
+<g id="windows">
+  <line id="binary_sensor.study_bedroom_window" class="window open-off" x1="180" y1="95" x2="180" y2="140"/>
+  <line id="binary_sensor.small_bedroom_window" class="window open-off" x1="60" y1="150" x2="140" y2="150"/>
+  <line id="binary_sensor.bathroom_window" class="window open-off" x1="440" y1="118" x2="500" y2="118"/>
+  <line id="binary_sensor.double_bedroom_window" class="window open-off" x1="80" y1="638" x2="170" y2="659"/>
+  <line id="binary_sensor.kitchen_window" class="window open-off" x1="410" y1="715" x2="500" y2="737"/>
+  <line id="binary_sensor.living_room_window" class="window open-off" x1="795" y1="520" x2="795" y2="620"/>
+  <line id="binary_sensor.balcony_east_door" class="window open-off" x1="795" y1="250" x2="795" y2="320"/>
+  <line id="binary_sensor.balcony_south_door" class="window open-off" x1="585" y1="756" x2="680" y2="779"/>
+</g>
+<g id="presence" pointer-events="none">
+  <g id="binary_sensor.study_bedroom_presence" class="presence presence-off" transform="translate(196 46)"><circle class="halo" cx="9" cy="12" r="16"/><circle cx="9" cy="6" r="5"/><path d="M0,22 C0,13 18,13 18,22 Z"/></g>
+  <g id="binary_sensor.small_bedroom_presence" class="presence presence-off" transform="translate(41 166)"><circle class="halo" cx="9" cy="12" r="16"/><circle cx="9" cy="6" r="5"/><path d="M0,22 C0,13 18,13 18,22 Z"/></g>
+  <g id="binary_sensor.double_bedroom_presence" class="presence presence-off" transform="translate(41 420)"><circle class="halo" cx="9" cy="12" r="16"/><circle cx="9" cy="6" r="5"/><path d="M0,22 C0,13 18,13 18,22 Z"/></g>
+  <g id="binary_sensor.bathroom_presence" class="presence presence-off" transform="translate(431 134)"><circle class="halo" cx="9" cy="12" r="16"/><circle cx="9" cy="6" r="5"/><path d="M0,22 C0,13 18,13 18,22 Z"/></g>
+  <g id="binary_sensor.wc_presence" class="presence presence-off" transform="translate(296 548)"><circle class="halo" cx="9" cy="12" r="16"/><circle cx="9" cy="6" r="5"/><path d="M0,22 C0,13 18,13 18,22 Z"/></g>
+  <g id="binary_sensor.storage_presence" class="presence presence-off" transform="translate(296 420)"><circle class="halo" cx="9" cy="12" r="16"/><circle cx="9" cy="6" r="5"/><path d="M0,22 C0,13 18,13 18,22 Z"/></g>
+  <g id="binary_sensor.kitchen_presence" class="presence presence-off" transform="translate(394 420)"><circle class="halo" cx="9" cy="12" r="16"/><circle cx="9" cy="6" r="5"/><path d="M0,22 C0,13 18,13 18,22 Z"/></g>
+  <g id="binary_sensor.dining_presence" class="presence presence-off" transform="translate(556 226)"><circle class="halo" cx="9" cy="12" r="16"/><circle cx="9" cy="6" r="5"/><path d="M0,22 C0,13 18,13 18,22 Z"/></g>
+</g>
+<g id="climate-text">
+  <text id="sensor.study_bedroom_temperature" class="temp" x="292" y="190" text-anchor="middle">–°</text>
+  <text id="sensor.study_bedroom_humidity" class="hum" x="292" y="210" text-anchor="middle">– %</text>
+  <text id="sensor.small_bedroom_temperature" class="temp" x="100" y="295" text-anchor="middle">–°</text>
+  <text id="sensor.small_bedroom_humidity" class="hum" x="100" y="315" text-anchor="middle">– %</text>
+  <text id="sensor.double_bedroom_temperature" class="temp" x="147" y="560" text-anchor="middle">–°</text>
+  <text id="sensor.double_bedroom_humidity" class="hum" x="147" y="580" text-anchor="middle">– %</text>
+  <text id="sensor.kitchen_temperature" class="temp" x="455" y="640" text-anchor="middle">–°</text>
+  <text id="sensor.kitchen_humidity" class="hum" x="455" y="660" text-anchor="middle">– %</text>
+  <text id="sensor.dining_temperature" class="temp" x="667" y="330" text-anchor="middle">–°</text>
+  <text id="sensor.dining_humidity" class="hum" x="667" y="350" text-anchor="middle">– %</text>
+</g>
+<g id="ac">
+  <g id="climate.study_bedroom" class="ac climate-off" transform="translate(385 50)"><circle r="13"/><path d="M-7,0 H7 M0,-7 V7 M-5,-5 L5,5 M5,-5 L-5,5"/></g>
+  <g id="climate.small_bedroom" class="ac climate-off" transform="translate(156 170)"><circle r="13"/><path d="M-7,0 H7 M0,-7 V7 M-5,-5 L5,5 M5,-5 L-5,5"/></g>
+  <g id="climate.double_bedroom" class="ac climate-off" transform="translate(250 424)"><circle r="13"/><path d="M-7,0 H7 M0,-7 V7 M-5,-5 L5,5 M5,-5 L-5,5"/></g>
+  <g id="climate.living_room" class="ac climate-off" transform="translate(775 425)"><circle r="13"/><path d="M-7,0 H7 M0,-7 V7 M-5,-5 L5,5 M5,-5 L-5,5"/></g>
+  <g id="climate.kitchen_dining" class="ac climate-off" transform="translate(775 230)"><circle r="13"/><path d="M-7,0 H7 M0,-7 V7 M-5,-5 L5,5 M5,-5 L-5,5"/></g>
+</g>
+<g id="leaks" pointer-events="none">
+  <g id="binary_sensor.storage_leak" class="leak leak-off" transform="translate(325 500)"><circle class="ring" r="24"/><path d="M0,-16 C6,-6 11,0 11,6 A11,11 0 0 1 -11,6 C-11,0 -6,-6 0,-16 Z"/></g>
+  <g id="binary_sensor.kitchen_sink_leak" class="leak leak-off" transform="translate(470 700)"><circle class="ring" r="24"/><path d="M0,-16 C6,-6 11,0 11,6 A11,11 0 0 1 -11,6 C-11,0 -6,-6 0,-16 Z"/></g>
+</g>
+<g id="status">
+  <text class="status-k" x="18" y="34">MODE</text><text id="input_select.house_mode" class="status-v" x="18" y="54">–</text>
+  <text class="status-k" x="18" y="80">ALARM</text><text id="alarm_control_panel.home" class="status-v alarm" x="18" y="100">–</text>
+  <text class="status-k" x="98" y="80">POWER</text><text id="sensor.mains_power" class="status-v" x="98" y="100">–</text>
+  <text class="status-k" x="98" y="34">TODAY</text><text id="sensor.electricity_cost_today" class="status-v" x="98" y="54">–</text>
+</g>
+</svg></div>
+  <aside>
+    <div class="group">
+      <h2>House mode</h2>
+      <div class="seg" id="modes">
+        <button type="button" data-mode="Home" aria-pressed="true">Home</button>
+        <button type="button" data-mode="Night" aria-pressed="false">Night</button>
+        <button type="button" data-mode="Away" aria-pressed="false">Away</button>
+        <button type="button" data-mode="Vacation" aria-pressed="false">Vac.</button>
+      </div>
+      <p class="hint">Away switches every light off and arms the alarm, as the automations do.</p>
+    </div>
+    <div class="group">
+      <h2>Someone walks into</h2>
+      <div class="row">
+        <select id="walk" aria-label="Room">
+          <option value="kitchen">Kitchen / living</option>
+          <option value="dining">Dining (front door)</option>
+          <option value="study_bedroom">Study</option>
+          <option value="small_bedroom">Bedroom</option>
+          <option value="double_bedroom">Master bedroom</option>
+          <option value="bathroom">Bath</option>
+          <option value="wc">WC</option>
+          <option value="storage">Storage</option>
+        </select>
+        <button type="button" id="go">Walk in</button>
+      </div>
+      <p class="log" id="log">The light follows presence: on when it's dark, off when the room is empty.</p>
+    </div>
+    <div class="group">
+      <h2>Sensors</h2>
+      <div class="row"><label for="w-kitchen">Kitchen window open</label><input type="checkbox" id="w-kitchen"></div>
+      <div class="row"><label for="w-east">East balcony door open</label><input type="checkbox" id="w-east"></div>
+      <div class="row"><label for="leak">Storage room leak</label><input type="checkbox" id="leak"></div>
+    </div>
+    <div class="group">
+      <h2>Legend</h2>
+      <div class="legend">
+        <span class="sw" style="background:var(--amber)"></span><span>Light on</span>
+        <span class="sw" style="background:var(--teal)"></span><span>Someone in the room</span>
+        <span class="sw" style="background:#ff8a4c"></span><span>A/C heating</span>
+        <span class="sw" style="background:#4cb3ff"></span><span>A/C cooling · window closed</span>
+        <span class="sw" style="background:var(--red)"></span><span>Window or door open</span>
+      </div>
+    </div>
+  </aside>
+</div>
+<script>
+(function(){
+  const $ = (s) => document.querySelector(s);
+  const byId = (id) => document.getElementById(id);
+  const setClass = (id, re, cls) => { const el = byId(id); if (!el) return; el.setAttribute('class', el.getAttribute('class').replace(re, cls)); };
+  const isOn = (id) => /light-on/.test(byId(id).getAttribute('class'));
+  const light = (id, on) => setClass(id, /light-(on|off)/, on ? 'light-on' : 'light-off');
+  const log = (html) => { $('#log').innerHTML = html; };
+
+  // Example readings
+  const temps = {study_bedroom:[21.4,46], small_bedroom:[20.6,51], double_bedroom:[20.9,49], kitchen:[22.3,44], dining:[21.8,45]};
+  for (const [r,[t,h]] of Object.entries(temps)) {
+    const tt = byId('sensor.'+r+'_temperature'), hh = byId('sensor.'+r+'_humidity');
+    if (tt) tt.textContent = t.toFixed(1)+'°'; if (hh) hh.textContent = h+' %';
+  }
+  const status = {'input_select.house_mode':'Home','alarm_control_panel.home':'Off','sensor.mains_power':'840 W','sensor.electricity_cost_today':'1.86 €'};
+  const paint = () => { for (const [k,v] of Object.entries(status)) byId(k).textContent = v; };
+  paint();
+  light('light.kitchen_ceiling', true); light('light.kitchen_counter_led', true);
+  setClass('binary_sensor.kitchen_presence', /presence-(on|off)/, 'presence-on');
+  setClass('climate.living_room', /climate-\w+/, 'climate-heat');
+
+  // Tap a room / lamp to toggle
+  document.querySelectorAll('#apartment .light').forEach(g => {
+    g.setAttribute('tabindex','0'); g.setAttribute('role','button');
+    g.setAttribute('aria-label', g.id.replace('light.','').replace(/_/g,' '));
+    const t = () => { const on = !isOn(g.id); light(g.id, on); log('<b>'+g.getAttribute('aria-label')+'</b> '+(on?'on':'off')+'.'); };
+    g.addEventListener('click', t);
+    g.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); t(); } });
+  });
+  // A/C cycles off → heat → cool → dry
+  const modes = ['off','heat','cool','dry'];
+  document.querySelectorAll('#apartment .ac').forEach(g => {
+    g.addEventListener('click', () => {
+      const cur = (g.getAttribute('class').match(/climate-(\w+)/)||[])[1] || 'off';
+      const next = modes[(modes.indexOf(cur)+1) % modes.length];
+      setClass(g.id, /climate-\w+/, 'climate-'+next);
+      log('<b>'+g.id.replace('climate.','').replace(/_/g,' ')+'</b> A/C: '+next+'.');
+    });
+  });
+
+  // Presence simulation
+  const roomLight = {kitchen:'light.kitchen_ceiling', dining:'light.dining_pendant', study_bedroom:'light.study_bedroom_ceiling',
+    small_bedroom:'light.small_bedroom_ceiling', double_bedroom:'light.double_bedroom_ceiling', bathroom:'light.bathroom', wc:'light.wc', storage:'light.storage'};
+  const timers = {};
+  $('#go').addEventListener('click', () => {
+    const r = $('#walk').value, pid = 'binary_sensor.'+r+'_presence', mode = status['input_select.house_mode'];
+    setClass(pid, /presence-(on|off)/, 'presence-on');
+    let msg = 'Presence in <b>'+r.replace(/_/g,' ')+'</b>. ';
+    if (mode === 'Away' || mode === 'Vacation') msg += 'Nobody should be home: in Away the alarm would trigger.';
+    else if (mode === 'Night' && /bedroom/.test(r)) msg += 'Night mode: bedroom light stays off.';
+    else if (mode === 'Night' && r === 'kitchen') { light('light.kitchen_counter_led', true); msg += 'Night mode: only the counter LED.'; }
+    else if (mode === 'Night' && (r === 'bathroom' || r === 'wc')) { light(roomLight[r], true); light('light.hallway', true); msg += 'Night path: hallway on too.'; }
+    else { light(roomLight[r], true); msg += 'Light on.'; }
+    log(msg + ' Empties in 8 s.');
+    clearTimeout(timers[r]);
+    timers[r] = setTimeout(() => {
+      setClass(pid, /presence-(on|off)/, 'presence-off'); light(roomLight[r], false);
+      if (r === 'kitchen') light('light.kitchen_counter_led', false);
+      if (r === 'bathroom' || r === 'wc') light('light.hallway', false);
+      log('<b>'+r.replace(/_/g,' ')+'</b> empty, light off.');
+    }, 8000);
+  });
+
+  // House mode
+  document.querySelectorAll('#modes button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#modes button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    const m = b.dataset.mode; status['input_select.house_mode'] = m;
+    status['alarm_control_panel.home'] = {Home:'Off', Night:'Night', Away:'Away', Vacation:'Away'}[m];
+    if (m === 'Away' || m === 'Vacation') {
+      document.querySelectorAll('#apartment .light').forEach(g => light(g.id, false));
+      document.querySelectorAll('#apartment .ac').forEach(g => setClass(g.id, /climate-\w+/, 'climate-off'));
+      status['sensor.mains_power'] = '95 W';
+    } else if (m === 'Night') {
+      ['light.kitchen_ceiling','light.kitchen_island_pendant','light.kitchen_counter_led','light.dining_pendant','light.living_room_ceiling','light.hallway','light.balcony_east','light.balcony_south'].forEach(id => light(id,false));
+      status['sensor.mains_power'] = '310 W';
+    } else status['sensor.mains_power'] = '840 W';
+    paint(); log('House mode: <b>'+m+'</b>.');
+  }));
+
+  // Sensors
+  const win = (box, id) => byId(box).addEventListener('change', e => setClass(id, /open-(on|off)/, e.target.checked ? 'open-on' : 'open-off'));
+  win('w-kitchen','binary_sensor.kitchen_window'); win('w-east','binary_sensor.balcony_east_door');
+  byId('leak').addEventListener('change', e => {
+    setClass('binary_sensor.storage_leak', /leak-(on|off)/, e.target.checked ? 'leak-on' : 'leak-off');
+    if (e.target.checked) { light('light.storage', true); log('<b>Leak</b> in the storage room: washer cut off, light on, alert every 5 min.'); }
+  });
+})();
+</script>
