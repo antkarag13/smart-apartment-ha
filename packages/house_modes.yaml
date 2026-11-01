@@ -77,15 +77,13 @@ automation:
   - id: house_mode_night
     alias: House mode - Night when the day zone goes quiet
     description: >
-      After 22:30, once both the living room and the kitchen have been empty
-      for 20 minutes, everyone has gone to bed. 01:30 is a fallback in case
+      After 22:30, once the open-plan living room / kitchen / dining space has
+      been empty for 20 minutes, everyone has gone to bed. 01:30 is a fallback in case
       the 20-minute window was missed (e.g. a restart).
     triggers:
       - trigger: occupancy.cleared
         target:
-          area_id:
-            - living_room
-            - kitchen
+          area_id: living_room
         options:
           behavior: all
           for: "00:20:00"
@@ -101,9 +99,6 @@ automation:
       - condition: state
         entity_id: binary_sensor.living_room_presence
         state: "off"
-      - condition: state
-        entity_id: binary_sensor.kitchen_presence
-        state: "off"
     actions:
       - action: input_select.select_option
         target:
@@ -114,13 +109,11 @@ automation:
 
   - id: house_mode_morning
     alias: House mode - Home in the morning
-    description: First presence in the kitchen or living room after 05:30 ends the night.
+    description: First presence in the open-plan living space after 05:30 ends the night.
     triggers:
       - trigger: occupancy.detected
         target:
-          area_id:
-            - kitchen
-            - living_room
+          area_id: living_room
       - trigger: time
         at: "10:00:00"
     conditions:

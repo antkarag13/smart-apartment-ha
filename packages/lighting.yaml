@@ -34,6 +34,24 @@ input_boolean:
   kitchen_light_override:
     name: Kitchen light override
     icon: mdi:hand-back-left
+  dining_light_override:
+    name: Dining light override
+    icon: mdi:hand-back-left
+  hallway_path_light:
+    name: Hallway on as night path light
+    icon: mdi:shoe-print
+
+# The open-plan space has two FP300s: F6 over the dining table (by the front
+# door) and F7 covering the kitchen and the living room. Together they make one
+# "is anyone in the living space" sensor.
+binary_sensor:
+  - platform: group
+    name: Living room presence
+    unique_id: living_room_presence_group
+    device_class: occupancy
+    entities:
+      - binary_sensor.dining_presence
+      - binary_sensor.kitchen_presence
 
 automation:
   # ---------------------------------------------------------------- bedrooms
@@ -131,10 +149,23 @@ automation:
       input:
         presence_sensor: binary_sensor.living_room_presence
         main_light: light.living_room_ceiling
-        illuminance_sensor: sensor.living_room_illuminance
+        illuminance_sensor: sensor.kitchen_illuminance
         night_behavior: "off"
         off_delay: 600
         override_helper: input_boolean.living_room_light_override
+
+  # Coming in through the front door after dark: the dining pendant lights up.
+  - id: lighting_dining
+    alias: Lighting - Dining presence
+    use_blueprint:
+      path: antkarag13/presence_lighting.yaml
+      input:
+        presence_sensor: binary_sensor.dining_presence
+        main_light: light.dining_pendant
+        illuminance_sensor: sensor.dining_illuminance
+        night_behavior: "off"
+        off_delay: 300
+        override_helper: input_boolean.dining_light_override
 
   # ------------------------------------------------------------- house modes
   - id: lighting_house_mode
@@ -170,7 +201,6 @@ automation:
                 target:
                   area_id:
                     - living_room
-                    - kitchen
                     - hallway
                     - balcony_east
                     - balcony_south
@@ -247,3 +277,64 @@ automation:
         target:
           area_id: "{{ area_id(trigger.entity_id) }}"
     mode: parallel
+
+  # ------------------------------------------------------- night path light
+  - id: lighting_night_path
+    alias: Lighting - Hallway as night path light
+    description: >
+      At night, someone walking into the bathroom or WC lights the hallway as
+      well, so the way back to bed is lit too. The hallway goes off 2 minutes
+      after both rooms are empty, and only if this automation switched it on.
+    triggers:
+      - trigger: occupancy.detected
+        target:
+          entity_id:
+            - binary_sensor.bathroom_presence
+            - binary_sensor.wc_presence
+        id: going
+      - trigger: state
+        entity_id:
+          - binary_sensor.bathroom_presence
+          - binary_sensor.wc_presence
+        to: "off"
+        for:
+          minutes: 2
+        id: back
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: going
+              - condition: state
+                entity_id: input_select.house_mode
+                state: Night
+              - condition: state
+                entity_id: light.hallway
+                state: "off"
+            sequence:
+              - action: light.turn_on
+                target:
+                  entity_id: light.hallway
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.hallway_path_light
+          - conditions:
+              - condition: trigger
+                id: back
+              - condition: state
+                entity_id: input_boolean.hallway_path_light
+                state: "on"
+              - condition: state
+                entity_id: binary_sensor.bathroom_presence
+                state: "off"
+              - condition: state
+                entity_id: binary_sensor.wc_presence
+                state: "off"
+            sequence:
+              - action: light.turn_off
+                target:
+                  entity_id: light.hallway
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.hallway_path_light
+    mode: queued

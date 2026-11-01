@@ -4,6 +4,8 @@
 #  - DIN-rail power relay for the water heater (own line, Γ14 C20 / 3×4).
 #  - SP1 / SP2: power-metering smart plugs on the washing machine and the
 #    chest freezer in the storage room.
+#  - Wired temperature probe inside the freezer (sensor body outside, cable
+#    under the lid seal).
 # =============================================================================
 
 input_boolean:
@@ -13,6 +15,9 @@ input_boolean:
   washer_running:
     name: Washing machine running
     icon: mdi:washing-machine
+  freezer_alert:
+    name: Freezer alert active
+    icon: mdi:snowflake-alert
 
 input_button:
   water_heater_boost:
@@ -20,6 +25,25 @@ input_button:
     icon: mdi:water-boiler
 
 input_number:
+  electricity_price:
+    name: Electricity price (all-in)
+    icon: mdi:currency-eur
+    min: 0.05
+    max: 0.60
+    step: 0.001
+    unit_of_measurement: EUR/kWh
+    mode: box
+    # All-in = supply + regulated charges + taxes + VAT, divided by kWh.
+    # The ΔΕΗ bill-calculator script prints this figure for a real bill.
+  electricity_fixed_monthly:
+    name: Electricity fixed charges per month
+    icon: mdi:cash
+    min: 0
+    max: 100
+    step: 0.5
+    unit_of_measurement: EUR
+    mode: box
+    # Standing charge + municipal fees + ERT, i.e. what you pay at 0 kWh.
   max_house_power:
     name: Maximum house power
     icon: mdi:flash-alert
@@ -59,6 +83,45 @@ schedule:
         to: "09:30:00"
       - from: "18:00:00"
         to: "19:00:00"
+
+template:
+  - sensor:
+      - name: Electricity cost today
+        unique_id: electricity_cost_today
+        unit_of_measurement: EUR
+        device_class: monetary
+        state: >
+          {{ (states('sensor.energy_daily') | float(0)
+              * states('input_number.electricity_price') | float(0)) | round(2) }}
+        availability: "{{ is_number(states('sensor.energy_daily')) }}"
+      - name: Electricity cost this month
+        unique_id: electricity_cost_month
+        unit_of_measurement: EUR
+        device_class: monetary
+        state: >
+          {% set days_in_month = ((now().replace(day=28) + timedelta(days=4))
+                                  .replace(day=1) - timedelta(days=1)).day %}
+          {{ (states('sensor.energy_monthly') | float(0)
+              * states('input_number.electricity_price') | float(0)
+              + states('input_number.electricity_fixed_monthly') | float(0)
+                * now().day / days_in_month) | round(2) }}
+        availability: "{{ is_number(states('sensor.energy_monthly')) }}"
+      - name: Electricity bill forecast
+        unique_id: electricity_bill_forecast
+        unit_of_measurement: EUR
+        device_class: monetary
+        icon: mdi:crystal-ball
+        # This month's energy so far, extrapolated to the whole month at the
+        # current pace, plus the full month of fixed charges.
+        state: >
+          {% set days_in_month = ((now().replace(day=28) + timedelta(days=4))
+                                  .replace(day=1) - timedelta(days=1)).day %}
+          {% set elapsed = (now().day - 1) + now().hour / 24 + now().minute / 1440 %}
+          {% set kwh = states('sensor.energy_monthly') | float(0) %}
+          {{ ((kwh / elapsed * days_in_month if elapsed > 0.5 else kwh)
+              * states('input_number.electricity_price') | float(0)
+              + states('input_number.electricity_fixed_monthly') | float(0)) | round(0) }}
+        availability: "{{ is_number(states('sensor.energy_monthly')) }}"
 
 utility_meter:
   energy_daily:
@@ -253,32 +316,127 @@ automation:
           message: The freezer plug was switched off and has been turned back on.
     mode: single
 
+  # The freezer has a wired probe inside (sensor.freezer_temperature): the
+  # temperature is the real answer, the plug's power tells us why.
   - id: energy_freezer_watchdog
     alias: Energy - Freezer watchdog
     description: >
-      Plug unreachable for 10 min = probably a power problem in the storage
-      room. Compressor not running for 4 hours = the freezer has stopped.
+      Warm      above -15 °C for 30 min (lid not shut, door seal, defrost).
+      Critical  above -10 °C for 10 min: food is at risk, act now.
+      Running nonstop: compressor on for 3 h without a break means the lid is
+                open or the freezer is failing, usually before it warms up.
+      Stopped:  compressor off for 4 h, or the plug offline for 10 min.
+      Probe:    no temperature reading for an hour.
+      The message says what the power reading shows, so you know whether it
+      is a lid, a dead compressor or a power cut before you go and look.
     triggers:
+      - trigger: numeric_state
+        entity_id: sensor.freezer_temperature
+        above: -15
+        for:
+          minutes: 30
+        id: warm
+      - trigger: numeric_state
+        entity_id: sensor.freezer_temperature
+        above: -10
+        for:
+          minutes: 10
+        id: critical
+      - trigger: numeric_state
+        entity_id: sensor.freezer_power
+        above: 5
+        for:
+          hours: 3
+        id: nonstop
+      - trigger: numeric_state
+        entity_id: sensor.freezer_power
+        below: 5
+        for:
+          hours: 4
+        id: stopped
       - trigger: state
         entity_id: switch.freezer
         to: unavailable
         for:
           minutes: 10
         id: offline
-      - trigger: numeric_state
-        entity_id: sensor.freezer_power
-        below: 5
+      - trigger: state
+        entity_id: sensor.freezer_temperature
+        to: unavailable
         for:
-          hours: 4
-        id: idle
+          hours: 1
+        id: probe
+    variables:
+      temp: "{{ states('sensor.freezer_temperature') }}"
+      power: "{{ states('sensor.freezer_power') }}"
+      reason: >
+        {% if is_state('switch.freezer', 'unavailable') %}the plug is offline (power cut in the storage room?)
+        {% elif is_number(power) and power | float > 5 %}the compressor is running ({{ power | int }} W), so check the lid
+        {% elif is_number(power) %}the compressor is NOT running
+        {% else %}no power reading{% endif %}
+      messages:
+        warm: "The freezer is at {{ temp }} °C, above -15 °C for 30 minutes."
+        critical: "The freezer is at {{ temp }} °C. Food is at risk."
+        nonstop: "The compressor has run nonstop for 3 hours. The lid may be open."
+        stopped: "The compressor has not run for 4 hours."
+        offline: "The freezer plug has been offline for 10 minutes."
+        probe: "The freezer temperature probe has not reported for an hour."
+    actions:
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.freezer_alert
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: "{{ 'FREEZER: act now' if trigger.id == 'critical' else 'Freezer: check it' }}"
+          message: "{{ messages[trigger.id] }} Now: {{ temp }} °C, {{ reason | trim }}."
+    mode: single
+
+  - id: energy_freezer_recovered
+    alias: Energy - Freezer back to normal
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.freezer_temperature
+        below: -18
+        for:
+          minutes: 15
+    conditions:
+      - condition: state
+        entity_id: input_boolean.freezer_alert
+        state: "on"
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.freezer_alert
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: Freezer OK
+          message: "Back to {{ states('sensor.freezer_temperature') }} °C."
+    mode: single
+
+  # ----------------------------------------------------------- monthly report
+  - id: energy_monthly_report
+    alias: Energy - Monthly electricity report
+    description: On the 1st of each month, last month's kWh and its cost.
+    triggers:
+      - trigger: time
+        at: "09:00:00"
+    variables:
+      kwh: "{{ state_attr('sensor.energy_monthly', 'last_period') | float(0) }}"
+      cost: >
+        {{ (kwh * states('input_number.electricity_price') | float(0)
+            + states('input_number.electricity_fixed_monthly') | float(0)) | round(0) | int }}
+      month: "{{ (now().replace(day=1) - timedelta(days=1)).strftime('%B') }}"
+    conditions:
+      - "{{ now().day == 1 and kwh > 0 }}"
     actions:
       - action: notify.send_message
         target:
           entity_id: notify.family
         data:
-          title: "Freezer: check it now"
-          message: >
-            {{ 'The freezer plug has been offline for 10 minutes.'
-               if trigger.id == 'offline'
-               else 'The freezer compressor has not run for 4 hours.' }}
+          title: "Electricity, {{ month }}"
+          message: "{{ kwh | round(0) | int }} kWh, about {{ cost }} €."
     mode: single

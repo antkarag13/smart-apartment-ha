@@ -7,11 +7,56 @@
 #    E2  small bedroom       2.0 kW   climate.small_bedroom
 #    E3  double bedroom      2.6 kW   climate.double_bedroom
 #    E4  living room         2.6 kW   climate.living_room
-#    E5  kitchen / dining    3.5 kW   climate.kitchen
+#    E5  kitchen / dining    3.5 kW   climate.kitchen_dining
 #
 #  Each climate entity sits in the same HA area as its room's window contacts
 #  and FP300, so every automation below works per room through area_id().
+#  E4 and E5 both serve the open-plan space (area living_room), so they pause
+#  and switch off together.
 # =============================================================================
+
+# ---------------------------------------------------------------------------
+#  Room targets. The dashboard sets these, not the units' own setpoints.
+# ---------------------------------------------------------------------------
+input_number:
+  study_bedroom_target_temperature: &target
+    name: Study bedroom target
+    min: 16
+    max: 28
+    step: 0.5
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer
+  small_bedroom_target_temperature:
+    <<: *target
+    name: Small bedroom target
+  double_bedroom_target_temperature:
+    <<: *target
+    name: Double bedroom target
+  living_room_target_temperature:
+    <<: *target
+    name: Living room target
+  kitchen_dining_target_temperature:
+    <<: *target
+    name: Kitchen / dining target
+
+input_boolean:
+  window_advice_sent_today:
+    name: Window advice sent today
+    icon: mdi:window-open-variant
+
+sensor:
+  # Average of the rooms people live in (not bathroom / WC / storage)
+  - platform: min_max
+    name: Indoor temperature
+    unique_id: indoor_temperature_mean
+    type: mean
+    round_digits: 1
+    entity_ids:
+      - sensor.study_bedroom_temperature
+      - sensor.small_bedroom_temperature
+      - sensor.double_bedroom_temperature
+      - sensor.kitchen_temperature
+      - sensor.dining_temperature
 
 automation:
   # ------------------------------------------------------------ open window
@@ -98,12 +143,15 @@ automation:
           - binary_sensor.small_bedroom_presence
           - binary_sensor.double_bedroom_presence
           - binary_sensor.living_room_presence
-          - binary_sensor.kitchen_presence
         to: "off"
         for:
           minutes: 45
     variables:
-      room: "{{ area_id(trigger.entity_id) }}"
+      # The living-room group sensor has no device, so it has no area unless
+      # one is assigned by hand; fall back to the area it stands for.
+      room: >
+        {{ area_id(trigger.entity_id)
+           or ('living_room' if trigger.entity_id == 'binary_sensor.living_room_presence' else none) }}
       units: >
         {{ area_entities(room) | select('match', 'climate\.')
            | reject('is_state', 'off') | list }}
@@ -137,5 +185,225 @@ automation:
             - climate.small_bedroom
             - climate.double_bedroom
             - climate.living_room
-            - climate.kitchen
+            - climate.kitchen_dining
     mode: single
+
+  # ------------------------------------------- room temperature from FP300
+  - id: climate_room_temperature_control
+    alias: Climate - Hold each room at its target using the FP300 reading
+    description: >
+      Ducted units measure the return air up in the false ceiling, which is
+      warmer than the room in winter and cooler in summer. Every 5 minutes,
+      for each unit that is heating or cooling, this compares the FP300
+      temperature in the room with the room's target and offsets the unit's
+      setpoint by the difference (max ±3 °C, in 0.5 °C steps):
+        setpoint = target + (target - room temperature)
+      so the room, not the ceiling, ends up at the target.
+    triggers:
+      - trigger: time_pattern
+        minutes: "/5"
+      - trigger: state
+        entity_id:
+          - input_number.study_bedroom_target_temperature
+          - input_number.small_bedroom_target_temperature
+          - input_number.double_bedroom_target_temperature
+          - input_number.living_room_target_temperature
+          - input_number.kitchen_dining_target_temperature
+    variables:
+      rooms:
+        - unit: climate.study_bedroom
+          sensor: sensor.study_bedroom_temperature
+          target: input_number.study_bedroom_target_temperature
+        - unit: climate.small_bedroom
+          sensor: sensor.small_bedroom_temperature
+          target: input_number.small_bedroom_target_temperature
+        - unit: climate.double_bedroom
+          sensor: sensor.double_bedroom_temperature
+          target: input_number.double_bedroom_target_temperature
+        - unit: climate.living_room
+          sensor: sensor.kitchen_temperature
+          target: input_number.living_room_target_temperature
+        - unit: climate.kitchen_dining
+          sensor: sensor.dining_temperature
+          target: input_number.kitchen_dining_target_temperature
+    actions:
+      - repeat:
+          for_each: "{{ rooms }}"
+          sequence:
+            - variables:
+                mode: "{{ states(repeat.item.unit) }}"
+                room: "{{ states(repeat.item.sensor) }}"
+                goal: "{{ states(repeat.item.target) | float(21) }}"
+                current: "{{ state_attr(repeat.item.unit, 'temperature') }}"
+                wanted: >
+                  {% set err = goal - room | float(goal) %}
+                  {% set off = [[err, -3] | max, 3] | min %}
+                  {{ [[((goal + off) * 2) | round / 2, 16] | max, 30] | min }}
+            - if:
+                - "{{ mode in ['heat', 'cool'] and is_number(room) }}"
+                - "{{ current is number and (wanted - current) | abs >= 0.5 }}"
+              then:
+                - action: climate.set_temperature
+                  target:
+                    entity_id: "{{ repeat.item.unit }}"
+                  data:
+                    temperature: "{{ wanted }}"
+    mode: single
+
+  - id: climate_adopt_manual_setpoint
+    alias: Climate - A setpoint changed by hand becomes the room's target
+    description: >
+      If someone changes a unit's temperature in the Home Assistant app, that
+      value becomes the room's target, so the control above works towards it
+      instead of undoing it. Only changes made by a user count, so the
+      automation's own corrections are never adopted as a new target.
+    triggers:
+      - trigger: state
+        entity_id:
+          - climate.study_bedroom
+          - climate.small_bedroom
+          - climate.double_bedroom
+          - climate.living_room
+          - climate.kitchen_dining
+        attribute: temperature
+    variables:
+      targets:
+        climate.study_bedroom: input_number.study_bedroom_target_temperature
+        climate.small_bedroom: input_number.small_bedroom_target_temperature
+        climate.double_bedroom: input_number.double_bedroom_target_temperature
+        climate.living_room: input_number.living_room_target_temperature
+        climate.kitchen_dining: input_number.kitchen_dining_target_temperature
+      new: "{{ trigger.to_state.attributes.temperature }}"
+    conditions:
+      - "{{ trigger.to_state.context.user_id is not none }}"
+      - "{{ new is number }}"
+    actions:
+      - action: input_number.set_value
+        target:
+          entity_id: "{{ targets[trigger.entity_id] }}"
+        data:
+          value: "{{ new }}"
+    mode: parallel
+
+  # ------------------------------------------- open windows instead of A/C
+  - id: climate_window_advice
+    alias: Climate - Suggest opening windows instead of cooling
+    description: >
+      On summer evenings, once it is at least 2 °C cooler outside than the
+      average indoor temperature, and not too humid, suggest switching the
+      A/C off and opening the windows. Once a day at most.
+    triggers:
+      - trigger: template
+        value_template: >
+          {{ is_number(states('sensor.indoor_temperature'))
+             and state_attr('weather.forecast_home', 'temperature') is number
+             and state_attr('weather.forecast_home', 'temperature')
+                 <= states('sensor.indoor_temperature') | float - 2 }}
+        for:
+          minutes: 20
+    variables:
+      cooling: >
+        {{ expand(['climate.study_bedroom', 'climate.small_bedroom',
+                   'climate.double_bedroom', 'climate.living_room',
+                   'climate.kitchen_dining'])
+           | selectattr('state', 'eq', 'cool') | map(attribute='name') | list }}
+    conditions:
+      - condition: time
+        after: "18:00:00"
+        before: "23:59:00"
+      - condition: state
+        entity_id: input_select.house_mode
+        state: Home
+      - condition: state
+        entity_id: input_boolean.window_advice_sent_today
+        state: "off"
+      - condition: numeric_state
+        entity_id: weather.forecast_home
+        attribute: humidity
+        below: 75
+      - "{{ cooling | count > 0 }}"
+    actions:
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.window_advice_sent_today
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: Open the windows?
+          message: >
+            It's {{ state_attr('weather.forecast_home', 'temperature') }} °C outside
+            and {{ states('sensor.indoor_temperature') }} °C inside.
+            Switch off the A/C ({{ cooling | join(', ') }}) and open the windows.
+    mode: single
+
+  - id: climate_window_advice_reset
+    alias: Climate - Reset the daily window advice
+    triggers:
+      - trigger: time
+        at: "04:00:00"
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.window_advice_sent_today
+    mode: single
+
+  # ------------------------------------------------------------ mould risk
+  - id: climate_mould_risk
+    alias: Climate - Dry a room that has stayed humid
+    description: >
+      Humidity above 70 % for 3 hours in a living room or bedroom is how mould
+      starts on Greek winter walls. If the room's unit is off and supports a
+      dry mode, it runs it for an hour; either way you get a notification.
+      Bathroom and WC are left out: they are humid after every shower.
+    triggers:
+      - trigger: numeric_state
+        entity_id:
+          - sensor.study_bedroom_humidity
+          - sensor.small_bedroom_humidity
+          - sensor.double_bedroom_humidity
+          - sensor.kitchen_humidity
+          - sensor.dining_humidity
+        above: 70
+        for:
+          hours: 3
+    variables:
+      room: "{{ area_id(trigger.entity_id) }}"
+      unit: >
+        {{ area_entities(room) | select('match', 'climate\.')
+           | select('is_state', 'off') | list | first | default('') }}
+      can_dry: "{{ unit != '' and 'dry' in (state_attr(unit, 'hvac_modes') or []) }}"
+    conditions:
+      - condition: state
+        entity_id: input_select.house_mode
+        state:
+          - Home
+          - Night
+    actions:
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: "Humid: {{ area_name(room) }}"
+          message: >
+            {{ states(trigger.entity_id) }} % humidity for 3 hours.
+            {{ 'Running the A/C in dry mode for an hour.' if can_dry
+               else 'Open a window or run the A/C in dry mode.' }}
+      - if:
+          - "{{ can_dry }}"
+        then:
+          - action: climate.set_hvac_mode
+            target:
+              entity_id: "{{ unit }}"
+            data:
+              hvac_mode: dry
+          - delay:
+              hours: 1
+          # Only switch off if nobody has changed the unit in the meantime
+          - if:
+              - "{{ is_state(unit, 'dry') }}"
+            then:
+              - action: climate.turn_off
+                target:
+                  entity_id: "{{ unit }}"
+    mode: parallel

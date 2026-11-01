@@ -9,6 +9,15 @@
 #  itself from Night mode, i.e. when the person is already inside.
 # =============================================================================
 
+# Actionable notifications need the mobile_app notify actions, so they go
+# through a legacy notify group of everyone's phones (rename to your devices).
+notify:
+  - platform: group
+    name: family_phones
+    services:
+      - action: mobile_app_phone_1
+      - action: mobile_app_phone_2
+
 automation:
   - id: security_follow_house_mode
     alias: Security - Alarm follows house mode
@@ -59,18 +68,15 @@ automation:
                   code: !secret alarmo_code
     mode: queued
 
-  - id: security_open_windows_on_leave
-    alias: Security - Warn about open windows when leaving
+  - id: security_open_windows_at_night
+    alias: Security - Warn about open windows at bedtime
     description: >
       Lists every window or balcony door still open when the house goes to
-      Away or Night. All contacts carry the `windows` label.
+      Night. All contacts carry the `windows` label.
     triggers:
       - trigger: state
         entity_id: input_select.house_mode
-        to:
-          - Away
-          - Vacation
-          - Night
+        to: Night
     variables:
       open_windows: >
         {{ label_entities('windows') | select('is_state', 'on')
@@ -127,3 +133,69 @@ automation:
             {{ {'armed_away': 'Armed (away)', 'armed_night': 'Armed (night)',
                 'disarmed': 'Disarmed'}[trigger.to_state.state] }}
     mode: queued
+
+  # --------------------------------------------------- "did you forget...?"
+  - id: security_leaving_check
+    alias: Security - Leaving check
+    description: >
+      75 s after the house goes to Away (just past Alarmo's 60 s exit delay),
+      checks what was left behind and sends ONE notification listing it. If
+      the alarm refused to arm because of an open window, the notification has
+      an "Arm anyway" button that arms Away and bypasses the open sensors.
+      Lights, A/C and water heater are switched off by their own packages, so
+      only things that need a person are listed.
+    triggers:
+      - trigger: state
+        entity_id: input_select.house_mode
+        to:
+          - Away
+          - Vacation
+    actions:
+      - delay:
+          seconds: 75
+      - variables:
+          open_windows: >
+            {{ label_entities('windows') | select('is_state', 'on')
+               | map('state_attr', 'friendly_name') | list }}
+          not_armed: >
+            {{ states('alarm_control_panel.home') not in
+               ['armed_away', 'armed_vacation', 'arming'] }}
+          items: >
+            {% set ns = namespace(i=[]) %}
+            {% if not_armed %}{% set ns.i = ns.i + ['Alarm is NOT armed'] %}{% endif %}
+            {% for w in open_windows %}{% set ns.i = ns.i + ['Open: ' ~ w] %}{% endfor %}
+            {% if is_state('input_boolean.washer_running', 'on') %}{% set ns.i = ns.i + ['Washing machine still running'] %}{% endif %}
+            {% if is_state('input_boolean.freezer_alert', 'on') %}{% set ns.i = ns.i + ['Freezer alert is active'] %}{% endif %}
+            {% if is_state('binary_sensor.storage_leak', 'on') or is_state('binary_sensor.kitchen_sink_leak', 'on') %}{% set ns.i = ns.i + ['A leak sensor is wet'] %}{% endif %}
+            {{ ns.i }}
+      - condition: template
+        value_template: "{{ items | count > 0 }}"
+      - action: notify.family_phones
+        data:
+          title: "You left {{ items | count }} thing{{ 's' if items | count > 1 }}"
+          message: "{{ items | join('\n') }}"
+          data:
+            tag: leaving_check
+            actions: >
+              {{ [{'action': 'ARM_AWAY_FORCE', 'title': 'Arm anyway'}] if not_armed else [] }}
+    mode: restart
+
+  - id: security_arm_anyway
+    alias: Security - "Arm anyway" button
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: ARM_AWAY_FORCE
+    actions:
+      - action: alarmo.arm
+        data:
+          entity_id: alarm_control_panel.home
+          mode: away
+          force: true
+      - action: notify.family_phones
+        data:
+          message: Armed (away), open sensors bypassed.
+          data:
+            tag: leaving_check
+    mode: single

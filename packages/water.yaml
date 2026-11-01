@@ -1,0 +1,96 @@
+# =============================================================================
+#  WATER LEAKS
+#  Two Zigbee leak sensors:
+#    - storage room floor, next to the washing machine
+#    - under the kitchen sink
+#  A leak alert repeats every 5 minutes until the floor is dry, because a
+#  single notification is easy to miss. In the storage room the washing
+#  machine is cut off at once, so it stops pumping water onto the floor.
+# =============================================================================
+
+automation:
+  - id: water_leak_detected
+    alias: Water - Leak detected
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.storage_leak
+          - binary_sensor.kitchen_sink_leak
+        to: "on"
+    variables:
+      room: "{{ 'storage room' if trigger.entity_id == 'binary_sensor.storage_leak' else 'kitchen, under the sink' }}"
+    actions:
+      - if:
+          - "{{ trigger.entity_id == 'binary_sensor.storage_leak' }}"
+        then:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.washing_machine
+      # Light the room so whoever runs in can see the floor
+      - action: light.turn_on
+        target:
+          area_id: "{{ area_id(trigger.entity_id) }}"
+      - repeat:
+          sequence:
+            - action: notify.send_message
+              target:
+                entity_id: notify.family
+              data:
+                title: "WATER LEAK: {{ room }}"
+                message: >
+                  Water detected in the {{ room }}.
+                  {{ 'The washing machine has been switched off.'
+                     if trigger.entity_id == 'binary_sensor.storage_leak' else '' }}
+            - wait_template: "{{ is_state(trigger.entity_id, 'off') }}"
+              timeout: "00:05:00"
+          until:
+            - "{{ is_state(trigger.entity_id, 'off') }}"
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: "Leak cleared: {{ room }}"
+          message: >
+            The sensor is dry again.
+            {{ 'Switch the washing machine back on when you have checked the hoses.'
+               if trigger.entity_id == 'binary_sensor.storage_leak' else '' }}
+    mode: parallel
+
+  - id: water_washing_machine_lockout
+    alias: Water - Keep the washing machine off while the storage room is wet
+    description: Stops anyone switching the washer back on before the leak sensor is dry.
+    triggers:
+      - trigger: state
+        entity_id: switch.washing_machine
+        to: "on"
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.storage_leak
+        state: "on"
+    actions:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.washing_machine
+    mode: single
+
+  - id: water_leak_sensor_offline
+    alias: Water - Leak sensor offline
+    description: >
+      A leak sensor with a dead battery gives no protection at all, so losing
+      one for an hour is reported, not just in the weekly battery report.
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.storage_leak
+          - binary_sensor.kitchen_sink_leak
+        to: unavailable
+        for:
+          hours: 1
+    actions:
+      - action: notify.send_message
+        target:
+          entity_id: notify.family
+        data:
+          title: Leak sensor offline
+          message: "{{ trigger.to_state.name }} has not reported for an hour. Check its battery."
+    mode: parallel

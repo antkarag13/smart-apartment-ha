@@ -1,8 +1,17 @@
 # Add these lines to your configuration.yaml to load this repository.
-# Copy packages/ and blueprints/ into your /config folder first.
+# Copy packages/, blueprints/, dashboards/ and www/ into your /config folder.
 
 homeassistant:
   packages: !include_dir_named packages
 
 # Keep the UI-managed automations working alongside the packages
 automation: !include automations.yaml
+
+lovelace:
+  dashboards:
+    dashboard-apartment:
+      mode: yaml
+      title: Apartment
+      icon: mdi:floor-plan
+      show_in_sidebar: true
+      filename: dashboards/apartment.yaml

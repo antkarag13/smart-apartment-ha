@@ -1,0 +1,636 @@
+# Lovelace dashboard (YAML mode). Registered in configuration.example.yaml.
+# The floor plan is drawing 9γ of the renovation, served from
+# www/floorplan/apartment.svg. Icons sit on the rooms; tap a light to toggle
+# it, a window or leak icon appears only while it is open / wet.
+
+title: Apartment
+views:
+- title: Floor plan
+  path: floor
+  icon: mdi:floor-plan
+  panel: true
+  cards:
+  - type: picture-elements
+    image: /local/floorplan/apartment.svg
+    elements:
+    - type: state-icon
+      entity: light.study_bedroom_ceiling
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 32.4%
+        top: 19.6%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: binary_sensor.study_bedroom_presence
+      icon: mdi:account
+      style:
+        left: 36.3%
+        top: 19.6%
+        --mdc-icon-size: 22px
+    - type: state-label
+      entity: sensor.study_bedroom_temperature
+      style:
+        left: 32.4%
+        top: 23.5%
+        background: rgba(255,255,255,0.85)
+        border-radius: 10px
+        padding: 0 6px
+        color: '#222'
+        font-size: 13px
+        font-weight: '600'
+    - type: state-icon
+      entity: light.small_bedroom_ceiling
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 10.9%
+        top: 28.3%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: binary_sensor.small_bedroom_presence
+      icon: mdi:account
+      style:
+        left: 14.8%
+        top: 28.3%
+        --mdc-icon-size: 22px
+    - type: state-label
+      entity: sensor.small_bedroom_temperature
+      style:
+        left: 10.9%
+        top: 31.7%
+        background: rgba(255,255,255,0.85)
+        border-radius: 10px
+        padding: 0 6px
+        color: '#222'
+        font-size: 13px
+        font-weight: '600'
+    - type: state-icon
+      entity: light.double_bedroom_ceiling
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 9.9%
+        top: 45.7%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: binary_sensor.double_bedroom_presence
+      icon: mdi:account
+      style:
+        left: 13.8%
+        top: 45.7%
+        --mdc-icon-size: 22px
+    - type: state-label
+      entity: sensor.double_bedroom_temperature
+      style:
+        left: 9.9%
+        top: 49.1%
+        background: rgba(255,255,255,0.85)
+        border-radius: 10px
+        padding: 0 6px
+        color: '#222'
+        font-size: 13px
+        font-weight: '600'
+    - type: state-icon
+      entity: light.hallway
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 40.2%
+        top: 38.9%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: light.bathroom
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 50.4%
+        top: 27.4%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: binary_sensor.bathroom_presence
+      icon: mdi:account
+      style:
+        left: 54.4%
+        top: 27.4%
+        --mdc-icon-size: 22px
+    - type: state-icon
+      entity: light.wc
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 35.3%
+        top: 62.1%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: binary_sensor.wc_presence
+      icon: mdi:account
+      style:
+        left: 36.7%
+        top: 70.3%
+        --mdc-icon-size: 22px
+    - type: state-icon
+      entity: light.storage
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 35.8%
+        top: 54.4%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: binary_sensor.storage_presence
+      icon: mdi:account
+      style:
+        left: 38.7%
+        top: 51.5%
+        --mdc-icon-size: 22px
+    - type: state-icon
+      entity: light.kitchen_ceiling
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 50.6%
+        top: 55.4%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: binary_sensor.kitchen_presence
+      icon: mdi:account
+      style:
+        left: 50.6%
+        top: 59.3%
+        --mdc-icon-size: 22px
+    - type: state-label
+      entity: sensor.kitchen_temperature
+      style:
+        left: 50.6%
+        top: 63.1%
+        background: rgba(255,255,255,0.85)
+        border-radius: 10px
+        padding: 0 6px
+        color: '#222'
+        font-size: 13px
+        font-weight: '600'
+    - type: state-icon
+      entity: light.dining_pendant
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 69.0%
+        top: 38.0%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: binary_sensor.dining_presence
+      icon: mdi:account
+      style:
+        left: 72.9%
+        top: 41.8%
+        --mdc-icon-size: 22px
+    - type: state-label
+      entity: sensor.dining_temperature
+      style:
+        left: 69.0%
+        top: 41.8%
+        background: rgba(255,255,255,0.85)
+        border-radius: 10px
+        padding: 0 6px
+        color: '#222'
+        font-size: 13px
+        font-weight: '600'
+    - type: state-icon
+      entity: light.living_room_ceiling
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 78.3%
+        top: 63.1%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: light.kitchen_island_pendant
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 57.8%
+        top: 59.2%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: light.kitchen_counter_led
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 45.1%
+        top: 64.0%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: light.balcony_east
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 94.9%
+        top: 41.8%
+        --mdc-icon-size: 30px
+    - type: state-icon
+      entity: light.balcony_south
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      style:
+        left: 62.7%
+        top: 90.1%
+        --mdc-icon-size: 30px
+    - type: conditional
+      conditions:
+      - entity: binary_sensor.small_bedroom_window
+        state: 'on'
+      elements:
+      - type: icon
+        icon: mdi:window-open-variant
+        tap_action:
+          action: more-info
+          entity: binary_sensor.small_bedroom_window
+        style:
+          left: 3.9%
+          top: 16.5%
+          color: '#e53935'
+          --mdc-icon-size: 26px
+          filter: drop-shadow(0 0 3px white)
+    - type: conditional
+      conditions:
+      - entity: binary_sensor.study_bedroom_window
+        state: 'on'
+      elements:
+      - type: icon
+        icon: mdi:window-open-variant
+        tap_action:
+          action: more-info
+          entity: binary_sensor.study_bedroom_window
+        style:
+          left: 20.0%
+          top: 10.2%
+          color: '#e53935'
+          --mdc-icon-size: 26px
+          filter: drop-shadow(0 0 3px white)
+    - type: conditional
+      conditions:
+      - entity: binary_sensor.bathroom_window
+        state: 'on'
+      elements:
+      - type: icon
+        icon: mdi:window-open-variant
+        tap_action:
+          action: more-info
+          entity: binary_sensor.bathroom_window
+        style:
+          left: 49.6%
+          top: 12.7%
+          color: '#e53935'
+          --mdc-icon-size: 26px
+          filter: drop-shadow(0 0 3px white)
+    - type: conditional
+      conditions:
+      - entity: binary_sensor.balcony_east_door
+        state: 'on'
+      elements:
+      - type: icon
+        icon: mdi:window-open-variant
+        tap_action:
+          action: more-info
+          entity: binary_sensor.balcony_east_door
+        style:
+          left: 89.2%
+          top: 30.0%
+          color: '#e53935'
+          --mdc-icon-size: 26px
+          filter: drop-shadow(0 0 3px white)
+    - type: conditional
+      conditions:
+      - entity: binary_sensor.living_room_window
+        state: 'on'
+      elements:
+      - type: icon
+        icon: mdi:window-open-variant
+        tap_action:
+          action: more-info
+          entity: binary_sensor.living_room_window
+        style:
+          left: 89.5%
+          top: 60.8%
+          color: '#e53935'
+          --mdc-icon-size: 26px
+          filter: drop-shadow(0 0 3px white)
+    - type: conditional
+      conditions:
+      - entity: binary_sensor.double_bedroom_window
+        state: 'on'
+      elements:
+      - type: icon
+        icon: mdi:window-open-variant
+        tap_action:
+          action: more-info
+          entity: binary_sensor.double_bedroom_window
+        style:
+          left: 12.6%
+          top: 71.0%
+          color: '#e53935'
+          --mdc-icon-size: 26px
+          filter: drop-shadow(0 0 3px white)
+    - type: conditional
+      conditions:
+      - entity: binary_sensor.kitchen_window
+        state: 'on'
+      elements:
+      - type: icon
+        icon: mdi:window-open-variant
+        tap_action:
+          action: more-info
+          entity: binary_sensor.kitchen_window
+        style:
+          left: 45.1%
+          top: 78.2%
+          color: '#e53935'
+          --mdc-icon-size: 26px
+          filter: drop-shadow(0 0 3px white)
+    - type: conditional
+      conditions:
+      - entity: binary_sensor.balcony_south_door
+        state: 'on'
+      elements:
+      - type: icon
+        icon: mdi:window-open-variant
+        tap_action:
+          action: more-info
+          entity: binary_sensor.balcony_south_door
+        style:
+          left: 68.5%
+          top: 83.3%
+          color: '#e53935'
+          --mdc-icon-size: 26px
+          filter: drop-shadow(0 0 3px white)
+    - type: conditional
+      conditions:
+      - entity: binary_sensor.storage_leak
+        state: 'on'
+      elements:
+      - type: icon
+        icon: mdi:water-alert
+        tap_action:
+          action: more-info
+          entity: binary_sensor.storage_leak
+        style:
+          left: 33.4%
+          top: 57.3%
+          color: '#1e88e5'
+          --mdc-icon-size: 26px
+          filter: drop-shadow(0 0 3px white)
+    - type: conditional
+      conditions:
+      - entity: binary_sensor.kitchen_sink_leak
+        state: 'on'
+      elements:
+      - type: icon
+        icon: mdi:water-alert
+        tap_action:
+          action: more-info
+          entity: binary_sensor.kitchen_sink_leak
+        style:
+          left: 50.0%
+          top: 76.8%
+          color: '#1e88e5'
+          --mdc-icon-size: 26px
+          filter: drop-shadow(0 0 3px white)
+    - type: state-label
+      entity: input_select.house_mode
+      prefix: 'Mode: '
+      style:
+        left: 2%
+        top: 2%
+        transform: none
+        background: rgba(255,255,255,0.85)
+        border-radius: 10px
+        padding: 0 6px
+        color: '#222'
+        font-size: 13px
+        font-weight: '600'
+    - type: state-icon
+      entity: alarm_control_panel.home
+      tap_action:
+        action: more-info
+      style:
+        left: 2%
+        top: 7%
+        transform: none
+        --mdc-icon-size: 28px
+    - type: state-label
+      entity: sensor.mains_power
+      style:
+        left: 7%
+        top: 7.6%
+        transform: none
+        background: rgba(255,255,255,0.85)
+        border-radius: 10px
+        padding: 0 6px
+        color: '#222'
+        font-size: 13px
+        font-weight: '600'
+    - type: state-label
+      entity: sensor.electricity_cost_today
+      prefix: 'Today '
+      style:
+        left: 2%
+        top: 12%
+        transform: none
+        background: rgba(255,255,255,0.85)
+        border-radius: 10px
+        padding: 0 6px
+        color: '#222'
+        font-size: 13px
+        font-weight: '600'
+- title: Climate
+  path: climate
+  icon: mdi:thermostat
+  cards:
+  - type: vertical-stack
+    cards:
+    - type: thermostat
+      entity: climate.study_bedroom
+      name: Study bedroom
+    - type: entities
+      entities:
+      - entity: input_number.study_bedroom_target_temperature
+        name: Room target
+      - entity: sensor.study_bedroom_temperature
+        name: Room temperature (FP300)
+      - entity: sensor.study_bedroom_humidity
+        name: Humidity
+      - entity: sensor.study_bedroom_ac_filter_hours
+        name: Filter hours
+  - type: vertical-stack
+    cards:
+    - type: thermostat
+      entity: climate.small_bedroom
+      name: Small bedroom
+    - type: entities
+      entities:
+      - entity: input_number.small_bedroom_target_temperature
+        name: Room target
+      - entity: sensor.small_bedroom_temperature
+        name: Room temperature (FP300)
+      - entity: sensor.small_bedroom_humidity
+        name: Humidity
+      - entity: sensor.small_bedroom_ac_filter_hours
+        name: Filter hours
+  - type: vertical-stack
+    cards:
+    - type: thermostat
+      entity: climate.double_bedroom
+      name: Double bedroom
+    - type: entities
+      entities:
+      - entity: input_number.double_bedroom_target_temperature
+        name: Room target
+      - entity: sensor.double_bedroom_temperature
+        name: Room temperature (FP300)
+      - entity: sensor.double_bedroom_humidity
+        name: Humidity
+      - entity: sensor.double_bedroom_ac_filter_hours
+        name: Filter hours
+  - type: vertical-stack
+    cards:
+    - type: thermostat
+      entity: climate.living_room
+      name: Living room (E4)
+    - type: entities
+      entities:
+      - entity: input_number.living_room_target_temperature
+        name: Room target
+      - entity: sensor.kitchen_temperature
+        name: Room temperature (FP300)
+      - entity: sensor.kitchen_humidity
+        name: Humidity
+      - entity: sensor.living_room_ac_filter_hours
+        name: Filter hours
+  - type: vertical-stack
+    cards:
+    - type: thermostat
+      entity: climate.kitchen_dining
+      name: Kitchen / dining (E5)
+    - type: entities
+      entities:
+      - entity: input_number.kitchen_dining_target_temperature
+        name: Room target
+      - entity: sensor.dining_temperature
+        name: Room temperature (FP300)
+      - entity: sensor.dining_humidity
+        name: Humidity
+      - entity: sensor.kitchen_dining_ac_filter_hours
+        name: Filter hours
+  - type: entities
+    title: Filters
+    entities:
+    - input_number.ac_filter_hours_limit
+    - input_button.ac_filters_cleaned
+  - type: entities
+    title: Indoor vs outdoor
+    entities:
+    - sensor.indoor_temperature
+    - type: attribute
+      entity: weather.forecast_home
+      attribute: temperature
+      name: Outdoor temperature
+      suffix: °C
+- title: Energy
+  path: energy
+  icon: mdi:lightning-bolt
+  cards:
+  - type: entities
+    title: Now
+    entities:
+    - sensor.mains_power
+    - sensor.electricity_cost_today
+    - sensor.electricity_cost_month
+    - sensor.electricity_bill_forecast
+    - input_boolean.load_shed
+  - type: history-graph
+    title: House power, 24 h
+    hours_to_show: 24
+    entities:
+    - sensor.mains_power
+  - type: entities
+    title: Water heater
+    entities:
+    - switch.water_heater
+    - input_button.water_heater_boost
+    - timer.water_heater_boost
+    - schedule.water_heater
+  - type: entities
+    title: Appliances
+    entities:
+    - sensor.washing_machine_power
+    - input_boolean.washer_running
+    - sensor.freezer_temperature
+    - sensor.freezer_power
+    - input_boolean.freezer_alert
+  - type: entities
+    title: Settings
+    entities:
+    - input_number.electricity_price
+    - input_number.electricity_fixed_monthly
+    - input_number.max_house_power
+- title: Home
+  path: home
+  icon: mdi:home-automation
+  cards:
+  - type: alarm-panel
+    entity: alarm_control_panel.home
+    states:
+    - arm_away
+    - arm_night
+  - type: entities
+    title: House
+    entities:
+    - input_select.house_mode
+    - input_boolean.guest_mode
+  - type: entities
+    title: Water
+    entities:
+    - binary_sensor.storage_leak
+    - binary_sensor.kitchen_sink_leak
+  - type: entities
+    title: Manual light overrides
+    show_header_toggle: false
+    entities:
+    - input_boolean.study_bedroom_light_override
+    - input_boolean.small_bedroom_light_override
+    - input_boolean.double_bedroom_light_override
+    - input_boolean.bathroom_light_override
+    - input_boolean.wc_light_override
+    - input_boolean.storage_light_override
+    - input_boolean.living_room_light_override
+    - input_boolean.kitchen_light_override
+    - input_boolean.dining_light_override

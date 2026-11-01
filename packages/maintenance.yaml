@@ -5,11 +5,87 @@
 #  behind access hatches in the ceilings and are easy to forget.
 # =============================================================================
 
-input_datetime:
-  ac_filters_cleaned:
-    name: A/C filters last cleaned
-    has_date: true
-    has_time: false
+# A/C filters: counted in real running hours per unit, not calendar days.
+# history_stats gives each unit's hours today; a utility_meter (no cycle)
+# adds the days up until the filters are cleaned and the counter is reset.
+sensor:
+  - platform: history_stats
+    name: Study bedroom AC runtime today
+    unique_id: study_bedroom_ac_runtime_today
+    entity_id: climate.study_bedroom
+    state: [heat, cool, dry, fan_only, heat_cool, auto]
+    type: time
+    start: "{{ today_at() }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Small bedroom AC runtime today
+    unique_id: small_bedroom_ac_runtime_today
+    entity_id: climate.small_bedroom
+    state: [heat, cool, dry, fan_only, heat_cool, auto]
+    type: time
+    start: "{{ today_at() }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Double bedroom AC runtime today
+    unique_id: double_bedroom_ac_runtime_today
+    entity_id: climate.double_bedroom
+    state: [heat, cool, dry, fan_only, heat_cool, auto]
+    type: time
+    start: "{{ today_at() }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Living room AC runtime today
+    unique_id: living_room_ac_runtime_today
+    entity_id: climate.living_room
+    state: [heat, cool, dry, fan_only, heat_cool, auto]
+    type: time
+    start: "{{ today_at() }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Kitchen dining AC runtime today
+    unique_id: kitchen_dining_ac_runtime_today
+    entity_id: climate.kitchen_dining
+    state: [heat, cool, dry, fan_only, heat_cool, auto]
+    type: time
+    start: "{{ today_at() }}"
+    end: "{{ now() }}"
+
+utility_meter:
+  study_bedroom_ac_filter_hours:
+    name: Study bedroom AC filter hours
+    unique_id: study_bedroom_ac_filter_hours
+    source: sensor.study_bedroom_ac_runtime_today
+    periodically_resetting: true
+  small_bedroom_ac_filter_hours:
+    name: Small bedroom AC filter hours
+    unique_id: small_bedroom_ac_filter_hours
+    source: sensor.small_bedroom_ac_runtime_today
+    periodically_resetting: true
+  double_bedroom_ac_filter_hours:
+    name: Double bedroom AC filter hours
+    unique_id: double_bedroom_ac_filter_hours
+    source: sensor.double_bedroom_ac_runtime_today
+    periodically_resetting: true
+  living_room_ac_filter_hours:
+    name: Living room AC filter hours
+    unique_id: living_room_ac_filter_hours
+    source: sensor.living_room_ac_runtime_today
+    periodically_resetting: true
+  kitchen_dining_ac_filter_hours:
+    name: Kitchen dining AC filter hours
+    unique_id: kitchen_dining_ac_filter_hours
+    source: sensor.kitchen_dining_ac_runtime_today
+    periodically_resetting: true
+
+input_number:
+  ac_filter_hours_limit:
+    name: A/C filter cleaning interval
+    icon: mdi:air-filter
+    min: 50
+    max: 1000
+    step: 25
+    unit_of_measurement: h
+    mode: box
 
 input_button:
   ac_filters_cleaned:
@@ -18,7 +94,7 @@ input_button:
 
 automation:
   - id: maintenance_filters_cleaned
-    alias: Maintenance - Record A/C filter cleaning
+    alias: Maintenance - Reset A/C filter hours
     triggers:
       - trigger: state
         entity_id: input_button.ac_filters_cleaned
@@ -26,40 +102,69 @@ automation:
           - unavailable
           - unknown
     actions:
-      - action: input_datetime.set_datetime
+      - action: utility_meter.calibrate
         target:
-          entity_id: input_datetime.ac_filters_cleaned
+          entity_id:
+          - sensor.study_bedroom_ac_filter_hours
+          - sensor.small_bedroom_ac_filter_hours
+          - sensor.double_bedroom_ac_filter_hours
+          - sensor.living_room_ac_filter_hours
+          - sensor.kitchen_dining_ac_filter_hours
         data:
-          date: "{{ now().date() }}"
+          value: "0"
     mode: single
 
   - id: maintenance_filters_reminder
-    alias: Maintenance - A/C filter reminder
-    description: Every morning, check whether the filters are older than 60 days.
+    alias: Maintenance - A/C filter reminder by running hours
+    description: >
+      Fires when a unit's filter passes the cleaning interval (300 h is a good
+      start for a dusty city flat), then reminds every Saturday until the
+      filters are cleaned and the button pressed. The message lists every
+      unit over the limit and where its access hatch is.
     triggers:
+      - trigger: numeric_state
+        entity_id:
+          - sensor.study_bedroom_ac_filter_hours
+          - sensor.small_bedroom_ac_filter_hours
+          - sensor.double_bedroom_ac_filter_hours
+          - sensor.living_room_ac_filter_hours
+          - sensor.kitchen_dining_ac_filter_hours
+        above: input_number.ac_filter_hours_limit
+        id: crossed
       - trigger: time
         at: "10:00:00"
     variables:
-      cleaned: "{{ state_attr('input_datetime.ac_filters_cleaned', 'timestamp') }}"
-      # A date-only input_datetime that was never set reads 1970-01-01, so
-      # anything before 2000 counts as "never cleaned".
-      days: >
-        {{ 999 if cleaned is none or cleaned < 946684800
-           else ((now().timestamp() - cleaned) / 86400) | int }}
+      hatches:
+        sensor.study_bedroom_ac_filter_hours: bathroom ceiling (E1)
+        sensor.small_bedroom_ac_filter_hours: hallway, west end (E2)
+        sensor.double_bedroom_ac_filter_hours: storage room (E3)
+        sensor.living_room_ac_filter_hours: hallway, east end (E4)
+        sensor.kitchen_dining_ac_filter_hours: hallway, middle (E5)
+      limit: "{{ states('input_number.ac_filter_hours_limit') | float(300) }}"
+      due: >
+        {% set ns = namespace(out=[]) %}
+        {% for e, where in hatches.items() %}
+          {% if states(e) | float(0) >= limit %}
+            {% set ns.out = ns.out + [state_attr(e, 'friendly_name') ~ ': '
+                ~ states(e) | float | round(0) | int ~ ' h, hatch in the ' ~ where] %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.out }}
     conditions:
-      - "{{ days >= 60 }}"
-      # Remind on the first day and then once a week, not every day
-      - "{{ days == 60 or (days - 60) % 7 == 0 or days == 999 }}"
+      - "{{ due | count > 0 }}"
+      - condition: or
+        conditions:
+          - condition: trigger
+            id: crossed
+          - condition: time
+            weekday: sat
     actions:
       - action: notify.send_message
         target:
           entity_id: notify.family
         data:
-          title: A/C filters
-          message: >
-            {{ 'The A/C filters have never been logged as cleaned.' if days == 999
-               else 'The A/C filters were last cleaned ' ~ days ~ ' days ago.' }}
-            Five hatches: bathroom, hallway (×3), storage room.
+          title: Clean the A/C filters
+          message: "{{ due | join('\n') }}"
     mode: single
 
   - id: maintenance_battery_report

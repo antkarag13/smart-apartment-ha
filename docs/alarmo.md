@@ -8,7 +8,7 @@ the table to reproduce there (**Alarmo → Sensors**).
 | Entrance door contact | ✓ | ✓ | ✓ 30 s | the only entry/exit route; add one if it isn't fitted yet |
 | Window contacts (label `windows`) | ✓ | ✓ | — | instant |
 | Balcony door contacts | ✓ | ✓ | — | instant |
-| FP300 living room, kitchen | ✓ | — | ✓ 30 s | on the way to the keypad |
+| FP300 dining (F6), kitchen–living (F7) | ✓ | — | ✓ 30 s | on the way to the keypad |
 | FP300 bedrooms | ✓ | — | — | people sleep here in Night mode |
 | FP300 bathroom, WC | ✓ | — | — | |
 | SNZB-06P storage | ✓ | — | — | |
