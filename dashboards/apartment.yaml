@@ -166,7 +166,7 @@ views:
     cards:
     - type: thermostat
       entity: climate.study_bedroom
-      name: Study bedroom
+      name: Bedroom 1
     - type: entities
       entities:
       - entity: input_number.study_bedroom_target_temperature
@@ -181,7 +181,7 @@ views:
     cards:
     - type: thermostat
       entity: climate.small_bedroom
-      name: Small bedroom
+      name: Bedroom 2
     - type: entities
       entities:
       - entity: input_number.small_bedroom_target_temperature

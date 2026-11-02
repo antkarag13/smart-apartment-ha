@@ -9,6 +9,7 @@
 #apartment .wall { fill: none; stroke: #8fa3ba; stroke-width: 7; stroke-linejoin: round; }
 #apartment .zone { fill: none; stroke: #33445c; stroke-width: 2; stroke-dasharray: 6 8; }
 #apartment .label { fill: #c9d6e6; font-size: 17px; font-weight: 600; letter-spacing: .3px; }
+#apartment .label.narrow { font-size: 14px; }
 #apartment .label.dim, #apartment .muted { fill: #4c5d73; font-size: 15px; font-weight: 600; }
 #apartment .small { font-size: 12px; }
 

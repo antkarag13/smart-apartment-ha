@@ -20,7 +20,7 @@
 # ---------------------------------------------------------------------------
 input_number:
   study_bedroom_target_temperature: &target
-    name: Study bedroom target
+    name: Bedroom 1 target
     min: 16
     max: 28
     step: 0.5
@@ -28,7 +28,7 @@ input_number:
     icon: mdi:thermometer
   small_bedroom_target_temperature:
     <<: *target
-    name: Small bedroom target
+    name: Bedroom 2 target
   double_bedroom_target_temperature:
     <<: *target
     name: Double bedroom target

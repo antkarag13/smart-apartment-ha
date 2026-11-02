@@ -11,19 +11,19 @@
 
 input_boolean:
   study_bedroom_light_override:
-    name: Study bedroom light override
+    name: Bedroom 1 light override
     icon: mdi:hand-back-left
   small_bedroom_light_override:
-    name: Small bedroom light override
+    name: Bedroom 2 light override
     icon: mdi:hand-back-left
   double_bedroom_light_override:
     name: Double bedroom light override
     icon: mdi:hand-back-left
   bathroom_light_override:
-    name: Bathroom light override
+    name: Main WC light override
     icon: mdi:hand-back-left
   wc_light_override:
-    name: WC light override
+    name: Master WC light override
     icon: mdi:hand-back-left
   storage_light_override:
     name: Storage light override
@@ -58,7 +58,7 @@ automation:
   # Lights follow presence in the evening, but never switch on by themselves
   # in Night mode.
   - id: lighting_study_bedroom
-    alias: Lighting - Study bedroom presence
+    alias: Lighting - Bedroom 1 presence
     use_blueprint:
       path: antkarag13/presence_lighting.yaml
       input:
@@ -70,7 +70,7 @@ automation:
         override_helper: input_boolean.study_bedroom_light_override
 
   - id: lighting_small_bedroom
-    alias: Lighting - Small bedroom presence
+    alias: Lighting - Bedroom 2 presence
     use_blueprint:
       path: antkarag13/presence_lighting.yaml
       input:
@@ -98,7 +98,7 @@ automation:
   # always light up, day or night. mmWave sees a still person, so the light
   # never goes off on someone in the shower.
   - id: lighting_bathroom
-    alias: Lighting - Bathroom presence
+    alias: Lighting - Main WC presence
     use_blueprint:
       path: antkarag13/presence_lighting.yaml
       input:
@@ -108,7 +108,7 @@ automation:
         override_helper: input_boolean.bathroom_light_override
 
   - id: lighting_wc
-    alias: Lighting - WC presence
+    alias: Lighting - Master WC presence
     use_blueprint:
       path: antkarag13/presence_lighting.yaml
       input:

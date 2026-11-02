@@ -68,13 +68,13 @@
   <polyline class="zone" points="540,746 540,404 795,404"/>
 </g>
 <g id="labels" pointer-events="none">
-  <text class="label" x="292" y="165" text-anchor="middle">Study</text>
-  <text class="label" x="100" y="268" text-anchor="middle">Bedroom</text>
-  <text class="label" x="468" y="209" text-anchor="middle">Bath</text>
+  <text class="label" x="292" y="165" text-anchor="middle">Bedroom 1</text>
+  <text class="label" x="100" y="268" text-anchor="middle">Bedroom 2</text>
+  <text class="label" x="468" y="209" text-anchor="middle">Main WC</text>
   <text class="label" x="300" y="360" text-anchor="middle">Hallway</text>
   <text class="label" x="147" y="520" text-anchor="middle">Master bedroom</text>
   <text class="label" x="325" y="464" text-anchor="middle">Storage</text>
-  <text class="label" x="325" y="614" text-anchor="middle">WC</text>
+  <text class="label narrow" x="325" y="614" text-anchor="middle">Master WC</text>
   <text class="label" x="455" y="600" text-anchor="middle">Kitchen</text>
   <text class="label" x="668" y="307" text-anchor="middle">Dining</text>
   <text class="label" x="667" y="620" text-anchor="middle">Living room</text>

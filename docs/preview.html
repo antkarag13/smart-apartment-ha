@@ -1,3 +1,6 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Smart Apartment Plan</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,6 +57,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
 #apartment .wall { fill: none; stroke: #8fa3ba; stroke-width: 7; stroke-linejoin: round; }
 #apartment .zone { fill: none; stroke: #33445c; stroke-width: 2; stroke-dasharray: 6 8; }
 #apartment .label { fill: #c9d6e6; font-size: 17px; font-weight: 600; letter-spacing: .3px; }
+#apartment .label.narrow { font-size: 14px; }
 #apartment .label.dim, #apartment .muted { fill: #4c5d73; font-size: 15px; font-weight: 600; }
 #apartment .small { font-size: 12px; }
 
@@ -188,13 +192,13 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
   <polyline class="zone" points="540,746 540,404 795,404"/>
 </g>
 <g id="labels" pointer-events="none">
-  <text class="label" x="292" y="165" text-anchor="middle">Study</text>
-  <text class="label" x="100" y="268" text-anchor="middle">Bedroom</text>
-  <text class="label" x="468" y="209" text-anchor="middle">Bath</text>
+  <text class="label" x="292" y="165" text-anchor="middle">Bedroom 1</text>
+  <text class="label" x="100" y="268" text-anchor="middle">Bedroom 2</text>
+  <text class="label" x="468" y="209" text-anchor="middle">Main WC</text>
   <text class="label" x="300" y="360" text-anchor="middle">Hallway</text>
   <text class="label" x="147" y="520" text-anchor="middle">Master bedroom</text>
   <text class="label" x="325" y="464" text-anchor="middle">Storage</text>
-  <text class="label" x="325" y="614" text-anchor="middle">WC</text>
+  <text class="label narrow" x="325" y="614" text-anchor="middle">Master WC</text>
   <text class="label" x="455" y="600" text-anchor="middle">Kitchen</text>
   <text class="label" x="668" y="307" text-anchor="middle">Dining</text>
   <text class="label" x="667" y="620" text-anchor="middle">Living room</text>
@@ -268,11 +272,11 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
         <select id="walk" aria-label="Room">
           <option value="kitchen">Kitchen / living</option>
           <option value="dining">Dining (front door)</option>
-          <option value="study_bedroom">Study</option>
-          <option value="small_bedroom">Bedroom</option>
+          <option value="study_bedroom">Bedroom 1</option>
+          <option value="small_bedroom">Bedroom 2</option>
           <option value="double_bedroom">Master bedroom</option>
-          <option value="bathroom">Bath</option>
-          <option value="wc">WC</option>
+          <option value="bathroom">Main WC</option>
+          <option value="wc">Master WC</option>
           <option value="storage">Storage</option>
         </select>
         <button type="button" id="go">Walk in</button>
@@ -305,6 +309,8 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
   const isOn = (id) => /light-on/.test(byId(id).getAttribute('class'));
   const light = (id, on) => setClass(id, /light-(on|off)/, on ? 'light-on' : 'light-off');
   const log = (html) => { $('#log').innerHTML = html; };
+  const NM = {study_bedroom:"Bedroom 1", small_bedroom:"Bedroom 2", double_bedroom:'Master bedroom', bathroom:'Main WC', wc:'Master WC', kitchen_dining:'Kitchen / dining', living_room:'Living room'};
+  const nm = (k) => NM[k] || k.replace(/_/g,' ');
 
   // Example readings
   const temps = {study_bedroom:[21.4,46], small_bedroom:[20.6,51], double_bedroom:[20.9,49], kitchen:[22.3,44], dining:[21.8,45]};
@@ -322,7 +328,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
   // Tap a room / lamp to toggle
   document.querySelectorAll('#apartment .light').forEach(g => {
     g.setAttribute('tabindex','0'); g.setAttribute('role','button');
-    g.setAttribute('aria-label', g.id.replace('light.','').replace(/_/g,' '));
+    g.setAttribute('aria-label', nm(g.id.replace('light.','').replace('_ceiling','')));
     const t = () => { const on = !isOn(g.id); light(g.id, on); log('<b>'+g.getAttribute('aria-label')+'</b> '+(on?'on':'off')+'.'); };
     g.addEventListener('click', t);
     g.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); t(); } });
@@ -334,7 +340,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
       const cur = (g.getAttribute('class').match(/climate-(\w+)/)||[])[1] || 'off';
       const next = modes[(modes.indexOf(cur)+1) % modes.length];
       setClass(g.id, /climate-\w+/, 'climate-'+next);
-      log('<b>'+g.id.replace('climate.','').replace(/_/g,' ')+'</b> A/C: '+next+'.');
+      log('<b>'+nm(g.id.replace('climate.',''))+'</b> A/C: '+next+'.');
     });
   });
 
@@ -345,7 +351,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
   $('#go').addEventListener('click', () => {
     const r = $('#walk').value, pid = 'binary_sensor.'+r+'_presence', mode = status['input_select.house_mode'];
     setClass(pid, /presence-(on|off)/, 'presence-on');
-    let msg = 'Presence in <b>'+r.replace(/_/g,' ')+'</b>. ';
+    let msg = 'Presence in <b>'+nm(r)+'</b>. ';
     if (mode === 'Away' || mode === 'Vacation') msg += 'Nobody should be home: in Away the alarm would trigger.';
     else if (mode === 'Night' && /bedroom/.test(r)) msg += 'Night mode: bedroom light stays off.';
     else if (mode === 'Night' && r === 'kitchen') { light('light.kitchen_counter_led', true); msg += 'Night mode: only the counter LED.'; }
@@ -357,7 +363,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
       setClass(pid, /presence-(on|off)/, 'presence-off'); light(roomLight[r], false);
       if (r === 'kitchen') light('light.kitchen_counter_led', false);
       if (r === 'bathroom' || r === 'wc') light('light.hallway', false);
-      log('<b>'+r.replace(/_/g,' ')+'</b> empty, light off.');
+      log('<b>'+nm(r)+'</b> empty, light off.');
     }, 8000);
   });
 

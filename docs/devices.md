@@ -28,17 +28,18 @@ the mesh gets stronger with every room.
 ## Areas
 
 Create these areas on one floor with the ID `apartment`, and assign every
-device to its room. Automations use area targets, so a sensor or light added
+device to its room. Area and entity IDs stay generic so the config is reusable;
+the room names below are what Home Assistant and the dashboard show. Automations use area targets, so a sensor or light added
 later is picked up without editing any YAML.
 
 | Area ID | Room (drawing 9γ) |
 |---|---|
-| `study_bedroom` | Υ/Δ πρώην κουζίνα: single bed + desk |
-| `small_bedroom` | Υ/Δ μικρό |
-| `double_bedroom` | Υ/Δ δίκλινο |
+| `study_bedroom` | Bedroom 1 (Υ/Δ πρώην κουζίνα): single bed + desk |
+| `small_bedroom` | Bedroom 2 (Υ/Δ μικρό) |
+| `double_bedroom` | Master bedroom (Υ/Δ δίκλινο) |
 | `hallway` | Διάδρομος |
-| `bathroom` | Λουτρό |
-| `wc` | WC |
+| `bathroom` | Main WC (Λουτρό) |
+| `wc` | Master WC, en-suite to the master bedroom |
 | `storage` | Αποθήκη |
 | `living_room` | Ενιαίος χώρος: καθιστικό, κουζίνα, τραπεζαρία |
 | `balcony_east` | Ανατολικός εξώστης |

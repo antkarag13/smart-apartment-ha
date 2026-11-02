@@ -52,12 +52,12 @@ sensor:
 
 utility_meter:
   study_bedroom_ac_filter_hours:
-    name: Study bedroom AC filter hours
+    name: Bedroom 1 AC filter hours
     unique_id: study_bedroom_ac_filter_hours
     source: sensor.study_bedroom_ac_runtime_today
     periodically_resetting: true
   small_bedroom_ac_filter_hours:
-    name: Small bedroom AC filter hours
+    name: Bedroom 2 AC filter hours
     unique_id: small_bedroom_ac_filter_hours
     source: sensor.small_bedroom_ac_runtime_today
     periodically_resetting: true
@@ -135,7 +135,7 @@ automation:
         at: "10:00:00"
     variables:
       hatches:
-        sensor.study_bedroom_ac_filter_hours: bathroom ceiling (E1)
+        sensor.study_bedroom_ac_filter_hours: main WC ceiling (E1)
         sensor.small_bedroom_ac_filter_hours: hallway, west end (E2)
         sensor.double_bedroom_ac_filter_hours: storage room (E3)
         sensor.living_room_ac_filter_hours: hallway, east end (E4)
