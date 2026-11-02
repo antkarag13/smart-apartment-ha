@@ -10,25 +10,25 @@
 # adds the days up until the filters are cleaned and the counter is reset.
 sensor:
   - platform: history_stats
-    name: Study bedroom AC runtime today
-    unique_id: study_bedroom_ac_runtime_today
-    entity_id: climate.study_bedroom
+    name: Bedroom 1 bedroom AC runtime today
+    unique_id: antonis_bedroom_ac_runtime_today
+    entity_id: climate.antonis_bedroom
     state: [heat, cool, dry, fan_only, heat_cool, auto]
     type: time
     start: "{{ today_at() }}"
     end: "{{ now() }}"
   - platform: history_stats
-    name: Small bedroom AC runtime today
-    unique_id: small_bedroom_ac_runtime_today
-    entity_id: climate.small_bedroom
+    name: Bedroom 2 bedroom AC runtime today
+    unique_id: emmanouela_bedroom_ac_runtime_today
+    entity_id: climate.emmanouela_bedroom
     state: [heat, cool, dry, fan_only, heat_cool, auto]
     type: time
     start: "{{ today_at() }}"
     end: "{{ now() }}"
   - platform: history_stats
-    name: Double bedroom AC runtime today
-    unique_id: double_bedroom_ac_runtime_today
-    entity_id: climate.double_bedroom
+    name: Master bedroom AC runtime today
+    unique_id: master_bedroom_ac_runtime_today
+    entity_id: climate.master_bedroom
     state: [heat, cool, dry, fan_only, heat_cool, auto]
     type: time
     start: "{{ today_at() }}"
@@ -51,20 +51,20 @@ sensor:
     end: "{{ now() }}"
 
 utility_meter:
-  study_bedroom_ac_filter_hours:
+  antonis_bedroom_ac_filter_hours:
     name: Bedroom 1 AC filter hours
-    unique_id: study_bedroom_ac_filter_hours
-    source: sensor.study_bedroom_ac_runtime_today
+    unique_id: antonis_bedroom_ac_filter_hours
+    source: sensor.antonis_bedroom_ac_runtime_today
     periodically_resetting: true
-  small_bedroom_ac_filter_hours:
+  emmanouela_bedroom_ac_filter_hours:
     name: Bedroom 2 AC filter hours
-    unique_id: small_bedroom_ac_filter_hours
-    source: sensor.small_bedroom_ac_runtime_today
+    unique_id: emmanouela_bedroom_ac_filter_hours
+    source: sensor.emmanouela_bedroom_ac_runtime_today
     periodically_resetting: true
-  double_bedroom_ac_filter_hours:
-    name: Double bedroom AC filter hours
-    unique_id: double_bedroom_ac_filter_hours
-    source: sensor.double_bedroom_ac_runtime_today
+  master_bedroom_ac_filter_hours:
+    name: Master bedroom AC filter hours
+    unique_id: master_bedroom_ac_filter_hours
+    source: sensor.master_bedroom_ac_runtime_today
     periodically_resetting: true
   living_room_ac_filter_hours:
     name: Living room AC filter hours
@@ -105,9 +105,9 @@ automation:
       - action: utility_meter.calibrate
         target:
           entity_id:
-          - sensor.study_bedroom_ac_filter_hours
-          - sensor.small_bedroom_ac_filter_hours
-          - sensor.double_bedroom_ac_filter_hours
+          - sensor.antonis_bedroom_ac_filter_hours
+          - sensor.emmanouela_bedroom_ac_filter_hours
+          - sensor.master_bedroom_ac_filter_hours
           - sensor.living_room_ac_filter_hours
           - sensor.kitchen_dining_ac_filter_hours
         data:
@@ -124,9 +124,9 @@ automation:
     triggers:
       - trigger: numeric_state
         entity_id:
-          - sensor.study_bedroom_ac_filter_hours
-          - sensor.small_bedroom_ac_filter_hours
-          - sensor.double_bedroom_ac_filter_hours
+          - sensor.antonis_bedroom_ac_filter_hours
+          - sensor.emmanouela_bedroom_ac_filter_hours
+          - sensor.master_bedroom_ac_filter_hours
           - sensor.living_room_ac_filter_hours
           - sensor.kitchen_dining_ac_filter_hours
         above: input_number.ac_filter_hours_limit
@@ -135,9 +135,9 @@ automation:
         at: "10:00:00"
     variables:
       hatches:
-        sensor.study_bedroom_ac_filter_hours: main WC ceiling (E1)
-        sensor.small_bedroom_ac_filter_hours: hallway, west end (E2)
-        sensor.double_bedroom_ac_filter_hours: storage room (E3)
+        sensor.antonis_bedroom_ac_filter_hours: main WC ceiling (E1)
+        sensor.emmanouela_bedroom_ac_filter_hours: hallway, west end (E2)
+        sensor.master_bedroom_ac_filter_hours: storage room (E3)
         sensor.living_room_ac_filter_hours: hallway, east end (E4)
         sensor.kitchen_dining_ac_filter_hours: hallway, middle (E5)
       limit: "{{ states('input_number.ac_filter_hours_limit') | float(300) }}"
@@ -208,13 +208,13 @@ automation:
     triggers:
       - trigger: state
         entity_id:
-          - light.study_bedroom_ceiling
-          - light.small_bedroom_ceiling
-          - light.double_bedroom_ceiling
+          - light.antonis_bedroom_ceiling
+          - light.emmanouela_bedroom_ceiling
+          - light.master_bedroom_ceiling
           - light.hallway
-          - light.bathroom
+          - light.main_wc
           - light.storage
-          - light.wc
+          - light.master_wc
           - light.kitchen_counter_led
           - light.balcony_east
           - light.balcony_south

@@ -21,7 +21,7 @@ the table to reproduce there (**Alarmo → Sensors**).
 | Night | 0 s | 30 s (entrance door only) | 180 s |
 
 Leave **"Allow open"** off on the window and balcony contacts, so Alarmo refuses
-to arm with one open; `security_open_windows_on_leave` tells you which one.
+to arm with one open; the leaving check (`security_leaving_check`) tells you which one.
 
 Put the disarm code in `secrets.yaml` as `alarmo_code`. It is used only for
 the automatic disarm when Night mode ends, i.e. when someone is already

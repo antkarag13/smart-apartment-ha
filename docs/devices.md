@@ -28,18 +28,17 @@ the mesh gets stronger with every room.
 ## Areas
 
 Create these areas on one floor with the ID `apartment`, and assign every
-device to its room. Area and entity IDs stay generic so the config is reusable;
-the room names below are what Home Assistant and the dashboard show. Automations use area targets, so a sensor or light added
+device to its room. Area and entity IDs are named after the rooms. Automations use area targets, so a sensor or light added
 later is picked up without editing any YAML.
 
 | Area ID | Room (drawing 9γ) |
 |---|---|
-| `study_bedroom` | Bedroom 1 (Υ/Δ πρώην κουζίνα): single bed + desk |
-| `small_bedroom` | Bedroom 2 (Υ/Δ μικρό) |
-| `double_bedroom` | Master bedroom (Υ/Δ δίκλινο) |
+| `antonis_bedroom` | Bedroom 1 (Υ/Δ πρώην κουζίνα): single bed + desk |
+| `emmanouela_bedroom` | Bedroom 2 (Υ/Δ μικρό) |
+| `master_bedroom` | Master bedroom (Υ/Δ δίκλινο) |
 | `hallway` | Διάδρομος |
-| `bathroom` | Main WC (Λουτρό) |
-| `wc` | Master WC, en-suite to the master bedroom |
+| `main_wc` | Main WC (Λουτρό) |
+| `master_wc` | Master WC, en-suite to the master bedroom |
 | `storage` | Αποθήκη |
 | `living_room` | Ενιαίος χώρος: καθιστικό, κουζίνα, τραπεζαρία |
 | `balcony_east` | Ανατολικός εξώστης |
@@ -56,13 +55,13 @@ Create helper → Change device type of a switch → Light**.
 
 | Relay | Entity ID | Load | Switch |
 |---|---|---|---|
-| R1 | `light.study_bedroom_ceiling` | ceiling | three-way |
-| R2 | `light.small_bedroom_ceiling` | ceiling | single |
-| R3 | `light.double_bedroom_ceiling` | ceiling | three-way |
+| R1 | `light.antonis_bedroom_ceiling` | ceiling | three-way |
+| R2 | `light.emmanouela_bedroom_ceiling` | ceiling | single |
+| R3 | `light.master_bedroom_ceiling` | ceiling | three-way |
 | R4 | `light.hallway` | hallway lights | three-way |
-| R5 | `light.bathroom` | ceiling + mirror | single |
+| R5 | `light.main_wc` | ceiling + mirror | single |
 | R6 | `light.storage` | ceiling | single |
-| R7 | `light.wc` | ceiling | single |
+| R7 | `light.master_wc` | ceiling | single |
 | R8 | `light.kitchen_counter_led` | under-cabinet LED | push button on the counter |
 | R9 | `light.balcony_east` | balcony light | by the balcony door |
 | R10 | `light.balcony_south` | balcony light | by the balcony door |
@@ -75,18 +74,18 @@ Create helper → Change device type of a switch → Light**.
 
 | Sensor | Entity IDs |
 |---|---|
-| F1 FP300, study bedroom | `binary_sensor.study_bedroom_presence`, `sensor.study_bedroom_illuminance` |
-| F2 FP300, small bedroom | `binary_sensor.small_bedroom_presence`, `sensor.small_bedroom_illuminance` |
-| F3 FP300, double bedroom | `binary_sensor.double_bedroom_presence`, `sensor.double_bedroom_illuminance` |
-| F4 FP300, bathroom | `binary_sensor.bathroom_presence` |
-| F5 FP300, WC | `binary_sensor.wc_presence` |
+| F1 FP300, Bedroom 1 | `binary_sensor.antonis_bedroom_presence`, `sensor.antonis_bedroom_illuminance` |
+| F2 FP300, Bedroom 2 | `binary_sensor.emmanouela_bedroom_presence`, `sensor.emmanouela_bedroom_illuminance` |
+| F3 FP300, master bedroom | `binary_sensor.master_bedroom_presence`, `sensor.master_bedroom_illuminance` |
+| F4 FP300, main WC | `binary_sensor.main_wc_presence` |
+| F5 FP300, master WC | `binary_sensor.master_wc_presence` |
 | F6 FP300, dining (by the front door) | `binary_sensor.dining_presence`, `sensor.dining_illuminance` |
 | F7 FP300, kitchen + living room | `binary_sensor.kitchen_presence`, `sensor.kitchen_illuminance` |
 | F6 + F7 together | `binary_sensor.living_room_presence`: group defined in `lighting.yaml`; it has no device, so assign it to area `living_room` by hand |
-| FP300 temperature / humidity | `sensor.<room>_temperature`, `sensor.<room>_humidity` for study_bedroom, small_bedroom, double_bedroom, kitchen (F7), dining (F6) |
+| FP300 temperature / humidity | `sensor.<room>_temperature`, `sensor.<room>_humidity` for antonis_bedroom, emmanouela_bedroom, master_bedroom, kitchen (F7), dining (F6) |
 | S1 SNZB-06P, storage | `binary_sensor.storage_presence` |
 | Balcony door contacts | `binary_sensor.balcony_east_door`, `binary_sensor.balcony_south_door` (device class `door`, label `windows`) |
-| Window contacts | `binary_sensor.study_bedroom_window`, `binary_sensor.small_bedroom_window`, `binary_sensor.double_bedroom_window`, `binary_sensor.bathroom_window`, `binary_sensor.kitchen_window`, `binary_sensor.living_room_window` (device class `window`, label `windows`) |
+| Window contacts | `binary_sensor.antonis_bedroom_window`, `binary_sensor.emmanouela_bedroom_window`, `binary_sensor.master_bedroom_window`, `binary_sensor.main_wc_window`, `binary_sensor.kitchen_window`, `binary_sensor.living_room_window` (device class `window`, label `windows`) |
 | Leak sensors | `binary_sensor.storage_leak` (area `storage`), `binary_sensor.kitchen_sink_leak` (area `living_room`) |
 | Freezer probe | `sensor.freezer_temperature` |
 
@@ -102,7 +101,7 @@ check. Bathroom and WC FP300s only report presence to the automations.
 | Water heater relay | `switch.water_heater` |
 | SP1 washing machine | `switch.washing_machine`, `sensor.washing_machine_power` |
 | SP2 chest freezer | `switch.freezer`, `sensor.freezer_power` |
-| A/C units E1–E5 | `climate.study_bedroom`, `climate.small_bedroom`, `climate.double_bedroom`, `climate.living_room` (E4), `climate.kitchen_dining` (E5) |
+| A/C units E1–E5 | `climate.antonis_bedroom`, `climate.emmanouela_bedroom`, `climate.master_bedroom`, `climate.living_room` (E4), `climate.kitchen_dining` (E5) |
 | Alarmo | `alarm_control_panel.home` |
 | Weather | `weather.forecast_home` (default Met.no integration) |
 | Notifications | `notify.family`: a notify group helper with everyone's phones, for plain messages · `notify.family_phones`: legacy group in `security.yaml` with the `mobile_app_*` actions, for notifications with buttons |

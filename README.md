@@ -12,7 +12,7 @@ apartment runs itself.
 
 ![Interactive floor plan](docs/floorplan.png)
 
-*Open [`docs/preview.html`](docs/preview.html) in a browser for a clickable demo.*
+*Open [`docs/index.html`](docs/index.html) (or the live demo on GitHub Pages) in a browser for a clickable demo.*
 
 ## What it does
 

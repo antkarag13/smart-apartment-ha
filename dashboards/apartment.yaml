@@ -23,13 +23,13 @@ views:
       rules:
       - name: 'Lights: tap a room to switch its light'
         entities:
-        - light.study_bedroom_ceiling
-        - light.small_bedroom_ceiling
-        - light.double_bedroom_ceiling
+        - light.antonis_bedroom_ceiling
+        - light.emmanouela_bedroom_ceiling
+        - light.master_bedroom_ceiling
         - light.hallway
-        - light.bathroom
+        - light.main_wc
         - light.storage
-        - light.wc
+        - light.master_wc
         - light.kitchen_ceiling
         - light.dining_pendant
         - light.living_room_ceiling
@@ -47,11 +47,11 @@ views:
             class: light-${entity.state}
       - name: Presence
         entities:
-        - binary_sensor.study_bedroom_presence
-        - binary_sensor.small_bedroom_presence
-        - binary_sensor.double_bedroom_presence
-        - binary_sensor.bathroom_presence
-        - binary_sensor.wc_presence
+        - binary_sensor.antonis_bedroom_presence
+        - binary_sensor.emmanouela_bedroom_presence
+        - binary_sensor.master_bedroom_presence
+        - binary_sensor.main_wc_presence
+        - binary_sensor.master_wc_presence
         - binary_sensor.storage_presence
         - binary_sensor.kitchen_presence
         - binary_sensor.dining_presence
@@ -62,9 +62,9 @@ views:
             class: presence-${entity.state}
       - name: Room temperatures
         entities:
-        - sensor.study_bedroom_temperature
-        - sensor.small_bedroom_temperature
-        - sensor.double_bedroom_temperature
+        - sensor.antonis_bedroom_temperature
+        - sensor.emmanouela_bedroom_temperature
+        - sensor.master_bedroom_temperature
         - sensor.kitchen_temperature
         - sensor.dining_temperature
         tap_action: more-info
@@ -75,9 +75,9 @@ views:
             text: '${[''unavailable'',''unknown''].includes(entity.state) ? ''–'' : Number(entity.state).toFixed(1) + ''°''}'
       - name: Room humidity
         entities:
-        - sensor.study_bedroom_humidity
-        - sensor.small_bedroom_humidity
-        - sensor.double_bedroom_humidity
+        - sensor.antonis_bedroom_humidity
+        - sensor.emmanouela_bedroom_humidity
+        - sensor.master_bedroom_humidity
         - sensor.kitchen_humidity
         - sensor.dining_humidity
         state_action:
@@ -87,9 +87,9 @@ views:
             text: '${[''unavailable'',''unknown''].includes(entity.state) ? ''– %'' : Math.round(entity.state) + '' %''}'
       - name: 'A/C units: colour by mode, tap for the thermostat'
         entities:
-        - climate.study_bedroom
-        - climate.small_bedroom
-        - climate.double_bedroom
+        - climate.antonis_bedroom
+        - climate.emmanouela_bedroom
+        - climate.master_bedroom
         - climate.living_room
         - climate.kitchen_dining
         tap_action: more-info
@@ -101,10 +101,10 @@ views:
             class: climate-${entity.state}
       - name: Windows and balcony doors
         entities:
-        - binary_sensor.study_bedroom_window
-        - binary_sensor.small_bedroom_window
-        - binary_sensor.bathroom_window
-        - binary_sensor.double_bedroom_window
+        - binary_sensor.antonis_bedroom_window
+        - binary_sensor.emmanouela_bedroom_window
+        - binary_sensor.main_wc_window
+        - binary_sensor.master_bedroom_window
         - binary_sensor.kitchen_window
         - binary_sensor.living_room_window
         - binary_sensor.balcony_east_door
@@ -165,47 +165,47 @@ views:
   - type: vertical-stack
     cards:
     - type: thermostat
-      entity: climate.study_bedroom
+      entity: climate.antonis_bedroom
       name: Bedroom 1
     - type: entities
       entities:
-      - entity: input_number.study_bedroom_target_temperature
+      - entity: input_number.antonis_bedroom_target_temperature
         name: Room target
-      - entity: sensor.study_bedroom_temperature
+      - entity: sensor.antonis_bedroom_temperature
         name: Room temperature (FP300)
-      - entity: sensor.study_bedroom_humidity
+      - entity: sensor.antonis_bedroom_humidity
         name: Humidity
-      - entity: sensor.study_bedroom_ac_filter_hours
+      - entity: sensor.antonis_bedroom_ac_filter_hours
         name: Filter hours
   - type: vertical-stack
     cards:
     - type: thermostat
-      entity: climate.small_bedroom
+      entity: climate.emmanouela_bedroom
       name: Bedroom 2
     - type: entities
       entities:
-      - entity: input_number.small_bedroom_target_temperature
+      - entity: input_number.emmanouela_bedroom_target_temperature
         name: Room target
-      - entity: sensor.small_bedroom_temperature
+      - entity: sensor.emmanouela_bedroom_temperature
         name: Room temperature (FP300)
-      - entity: sensor.small_bedroom_humidity
+      - entity: sensor.emmanouela_bedroom_humidity
         name: Humidity
-      - entity: sensor.small_bedroom_ac_filter_hours
+      - entity: sensor.emmanouela_bedroom_ac_filter_hours
         name: Filter hours
   - type: vertical-stack
     cards:
     - type: thermostat
-      entity: climate.double_bedroom
-      name: Double bedroom
+      entity: climate.master_bedroom
+      name: Master bedroom
     - type: entities
       entities:
-      - entity: input_number.double_bedroom_target_temperature
+      - entity: input_number.master_bedroom_target_temperature
         name: Room target
-      - entity: sensor.double_bedroom_temperature
+      - entity: sensor.master_bedroom_temperature
         name: Room temperature (FP300)
-      - entity: sensor.double_bedroom_humidity
+      - entity: sensor.master_bedroom_humidity
         name: Humidity
-      - entity: sensor.double_bedroom_ac_filter_hours
+      - entity: sensor.master_bedroom_ac_filter_hours
         name: Filter hours
   - type: vertical-stack
     cards:
@@ -312,11 +312,11 @@ views:
     title: Manual light overrides
     show_header_toggle: false
     entities:
-    - input_boolean.study_bedroom_light_override
-    - input_boolean.small_bedroom_light_override
-    - input_boolean.double_bedroom_light_override
-    - input_boolean.bathroom_light_override
-    - input_boolean.wc_light_override
+    - input_boolean.antonis_bedroom_light_override
+    - input_boolean.emmanouela_bedroom_light_override
+    - input_boolean.master_bedroom_light_override
+    - input_boolean.main_wc_light_override
+    - input_boolean.master_wc_light_override
     - input_boolean.storage_light_override
     - input_boolean.living_room_light_override
     - input_boolean.kitchen_light_override

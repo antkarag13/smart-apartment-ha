@@ -3,9 +3,9 @@
 #  Multi-split heat pump: one 5-port outdoor unit in the light well and five
 #  concealed ducted indoor units above the plasterboard ceilings, one per room:
 #
-#    E1  study bedroom       2.6 kW   climate.study_bedroom
-#    E2  small bedroom       2.0 kW   climate.small_bedroom
-#    E3  double bedroom      2.6 kW   climate.double_bedroom
+#    E1  study bedroom       2.6 kW   climate.antonis_bedroom
+#    E2  small bedroom       2.0 kW   climate.emmanouela_bedroom
+#    E3  double bedroom      2.6 kW   climate.master_bedroom
 #    E4  living room         2.6 kW   climate.living_room
 #    E5  kitchen / dining    3.5 kW   climate.kitchen_dining
 #
@@ -19,19 +19,19 @@
 #  Room targets. The dashboard sets these, not the units' own setpoints.
 # ---------------------------------------------------------------------------
 input_number:
-  study_bedroom_target_temperature: &target
+  antonis_bedroom_target_temperature: &target
     name: Bedroom 1 target
     min: 16
     max: 28
     step: 0.5
     unit_of_measurement: "°C"
     icon: mdi:thermometer
-  small_bedroom_target_temperature:
+  emmanouela_bedroom_target_temperature:
     <<: *target
     name: Bedroom 2 target
-  double_bedroom_target_temperature:
+  master_bedroom_target_temperature:
     <<: *target
-    name: Double bedroom target
+    name: Master bedroom target
   living_room_target_temperature:
     <<: *target
     name: Living room target
@@ -52,9 +52,9 @@ sensor:
     type: mean
     round_digits: 1
     entity_ids:
-      - sensor.study_bedroom_temperature
-      - sensor.small_bedroom_temperature
-      - sensor.double_bedroom_temperature
+      - sensor.antonis_bedroom_temperature
+      - sensor.emmanouela_bedroom_temperature
+      - sensor.master_bedroom_temperature
       - sensor.kitchen_temperature
       - sensor.dining_temperature
 
@@ -139,9 +139,9 @@ automation:
     triggers:
       - trigger: state
         entity_id:
-          - binary_sensor.study_bedroom_presence
-          - binary_sensor.small_bedroom_presence
-          - binary_sensor.double_bedroom_presence
+          - binary_sensor.antonis_bedroom_presence
+          - binary_sensor.emmanouela_bedroom_presence
+          - binary_sensor.master_bedroom_presence
           - binary_sensor.living_room_presence
         to: "off"
         for:
@@ -156,9 +156,9 @@ automation:
         {{ area_entities(room) | select('match', 'climate\.')
            | reject('is_state', 'off') | list }}
       bedrooms:
-        - study_bedroom
-        - small_bedroom
-        - double_bedroom
+        - antonis_bedroom
+        - emmanouela_bedroom
+        - master_bedroom
     conditions:
       - "{{ units | count > 0 }}"
       - "{{ not (is_state('input_select.house_mode', 'Night') and room in bedrooms) }}"
@@ -181,9 +181,9 @@ automation:
       - action: climate.turn_off
         target:
           entity_id:
-            - climate.study_bedroom
-            - climate.small_bedroom
-            - climate.double_bedroom
+            - climate.antonis_bedroom
+            - climate.emmanouela_bedroom
+            - climate.master_bedroom
             - climate.living_room
             - climate.kitchen_dining
     mode: single
@@ -204,22 +204,22 @@ automation:
         minutes: "/5"
       - trigger: state
         entity_id:
-          - input_number.study_bedroom_target_temperature
-          - input_number.small_bedroom_target_temperature
-          - input_number.double_bedroom_target_temperature
+          - input_number.antonis_bedroom_target_temperature
+          - input_number.emmanouela_bedroom_target_temperature
+          - input_number.master_bedroom_target_temperature
           - input_number.living_room_target_temperature
           - input_number.kitchen_dining_target_temperature
     variables:
       rooms:
-        - unit: climate.study_bedroom
-          sensor: sensor.study_bedroom_temperature
-          target: input_number.study_bedroom_target_temperature
-        - unit: climate.small_bedroom
-          sensor: sensor.small_bedroom_temperature
-          target: input_number.small_bedroom_target_temperature
-        - unit: climate.double_bedroom
-          sensor: sensor.double_bedroom_temperature
-          target: input_number.double_bedroom_target_temperature
+        - unit: climate.antonis_bedroom
+          sensor: sensor.antonis_bedroom_temperature
+          target: input_number.antonis_bedroom_target_temperature
+        - unit: climate.emmanouela_bedroom
+          sensor: sensor.emmanouela_bedroom_temperature
+          target: input_number.emmanouela_bedroom_target_temperature
+        - unit: climate.master_bedroom
+          sensor: sensor.master_bedroom_temperature
+          target: input_number.master_bedroom_target_temperature
         - unit: climate.living_room
           sensor: sensor.kitchen_temperature
           target: input_number.living_room_target_temperature
@@ -260,17 +260,17 @@ automation:
     triggers:
       - trigger: state
         entity_id:
-          - climate.study_bedroom
-          - climate.small_bedroom
-          - climate.double_bedroom
+          - climate.antonis_bedroom
+          - climate.emmanouela_bedroom
+          - climate.master_bedroom
           - climate.living_room
           - climate.kitchen_dining
         attribute: temperature
     variables:
       targets:
-        climate.study_bedroom: input_number.study_bedroom_target_temperature
-        climate.small_bedroom: input_number.small_bedroom_target_temperature
-        climate.double_bedroom: input_number.double_bedroom_target_temperature
+        climate.antonis_bedroom: input_number.antonis_bedroom_target_temperature
+        climate.emmanouela_bedroom: input_number.emmanouela_bedroom_target_temperature
+        climate.master_bedroom: input_number.master_bedroom_target_temperature
         climate.living_room: input_number.living_room_target_temperature
         climate.kitchen_dining: input_number.kitchen_dining_target_temperature
       new: "{{ trigger.to_state.attributes.temperature }}"
@@ -303,8 +303,8 @@ automation:
           minutes: 20
     variables:
       cooling: >
-        {{ expand(['climate.study_bedroom', 'climate.small_bedroom',
-                   'climate.double_bedroom', 'climate.living_room',
+        {{ expand(['climate.antonis_bedroom', 'climate.emmanouela_bedroom',
+                   'climate.master_bedroom', 'climate.living_room',
                    'climate.kitchen_dining'])
            | selectattr('state', 'eq', 'cool') | map(attribute='name') | list }}
     conditions:
@@ -359,9 +359,9 @@ automation:
     triggers:
       - trigger: numeric_state
         entity_id:
-          - sensor.study_bedroom_humidity
-          - sensor.small_bedroom_humidity
-          - sensor.double_bedroom_humidity
+          - sensor.antonis_bedroom_humidity
+          - sensor.emmanouela_bedroom_humidity
+          - sensor.master_bedroom_humidity
           - sensor.kitchen_humidity
           - sensor.dining_humidity
         above: 70

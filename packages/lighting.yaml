@@ -10,19 +10,19 @@
 # =============================================================================
 
 input_boolean:
-  study_bedroom_light_override:
+  antonis_bedroom_light_override:
     name: Bedroom 1 light override
     icon: mdi:hand-back-left
-  small_bedroom_light_override:
+  emmanouela_bedroom_light_override:
     name: Bedroom 2 light override
     icon: mdi:hand-back-left
-  double_bedroom_light_override:
-    name: Double bedroom light override
+  master_bedroom_light_override:
+    name: Master bedroom light override
     icon: mdi:hand-back-left
-  bathroom_light_override:
+  main_wc_light_override:
     name: Main WC light override
     icon: mdi:hand-back-left
-  wc_light_override:
+  master_wc_light_override:
     name: Master WC light override
     icon: mdi:hand-back-left
   storage_light_override:
@@ -57,41 +57,41 @@ automation:
   # ---------------------------------------------------------------- bedrooms
   # Lights follow presence in the evening, but never switch on by themselves
   # in Night mode.
-  - id: lighting_study_bedroom
+  - id: lighting_antonis_bedroom
     alias: Lighting - Bedroom 1 presence
     use_blueprint:
       path: antkarag13/presence_lighting.yaml
       input:
-        presence_sensor: binary_sensor.study_bedroom_presence
-        main_light: light.study_bedroom_ceiling
-        illuminance_sensor: sensor.study_bedroom_illuminance
+        presence_sensor: binary_sensor.antonis_bedroom_presence
+        main_light: light.antonis_bedroom_ceiling
+        illuminance_sensor: sensor.antonis_bedroom_illuminance
         night_behavior: "off"
         off_delay: 300
-        override_helper: input_boolean.study_bedroom_light_override
+        override_helper: input_boolean.antonis_bedroom_light_override
 
-  - id: lighting_small_bedroom
+  - id: lighting_emmanouela_bedroom
     alias: Lighting - Bedroom 2 presence
     use_blueprint:
       path: antkarag13/presence_lighting.yaml
       input:
-        presence_sensor: binary_sensor.small_bedroom_presence
-        main_light: light.small_bedroom_ceiling
-        illuminance_sensor: sensor.small_bedroom_illuminance
+        presence_sensor: binary_sensor.emmanouela_bedroom_presence
+        main_light: light.emmanouela_bedroom_ceiling
+        illuminance_sensor: sensor.emmanouela_bedroom_illuminance
         night_behavior: "off"
         off_delay: 300
-        override_helper: input_boolean.small_bedroom_light_override
+        override_helper: input_boolean.emmanouela_bedroom_light_override
 
-  - id: lighting_double_bedroom
-    alias: Lighting - Double bedroom presence
+  - id: lighting_master_bedroom
+    alias: Lighting - Master bedroom presence
     use_blueprint:
       path: antkarag13/presence_lighting.yaml
       input:
-        presence_sensor: binary_sensor.double_bedroom_presence
-        main_light: light.double_bedroom_ceiling
-        illuminance_sensor: sensor.double_bedroom_illuminance
+        presence_sensor: binary_sensor.master_bedroom_presence
+        main_light: light.master_bedroom_ceiling
+        illuminance_sensor: sensor.master_bedroom_illuminance
         night_behavior: "off"
         off_delay: 300
-        override_helper: input_boolean.double_bedroom_light_override
+        override_helper: input_boolean.master_bedroom_light_override
 
   # -------------------------------------------------------------- wet rooms
   # Bathroom, WC and storage get little daylight, so they ignore lux and
@@ -102,20 +102,20 @@ automation:
     use_blueprint:
       path: antkarag13/presence_lighting.yaml
       input:
-        presence_sensor: binary_sensor.bathroom_presence
-        main_light: light.bathroom
+        presence_sensor: binary_sensor.main_wc_presence
+        main_light: light.main_wc
         off_delay: 60
-        override_helper: input_boolean.bathroom_light_override
+        override_helper: input_boolean.main_wc_light_override
 
   - id: lighting_wc
     alias: Lighting - Master WC presence
     use_blueprint:
       path: antkarag13/presence_lighting.yaml
       input:
-        presence_sensor: binary_sensor.wc_presence
-        main_light: light.wc
+        presence_sensor: binary_sensor.master_wc_presence
+        main_light: light.master_wc
         off_delay: 60
-        override_helper: input_boolean.wc_light_override
+        override_helper: input_boolean.master_wc_light_override
 
   - id: lighting_storage
     alias: Lighting - Storage presence
@@ -289,13 +289,13 @@ automation:
       - trigger: occupancy.detected
         target:
           entity_id:
-            - binary_sensor.bathroom_presence
-            - binary_sensor.wc_presence
+            - binary_sensor.main_wc_presence
+            - binary_sensor.master_wc_presence
         id: going
       - trigger: state
         entity_id:
-          - binary_sensor.bathroom_presence
-          - binary_sensor.wc_presence
+          - binary_sensor.main_wc_presence
+          - binary_sensor.master_wc_presence
         to: "off"
         for:
           minutes: 2
@@ -325,10 +325,10 @@ automation:
                 entity_id: input_boolean.hallway_path_light
                 state: "on"
               - condition: state
-                entity_id: binary_sensor.bathroom_presence
+                entity_id: binary_sensor.main_wc_presence
                 state: "off"
               - condition: state
-                entity_id: binary_sensor.wc_presence
+                entity_id: binary_sensor.master_wc_presence
                 state: "off"
             sequence:
               - action: light.turn_off

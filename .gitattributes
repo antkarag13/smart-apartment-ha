@@ -1,2 +1,2 @@
 *.yaml linguist-detectable=true
-docs/preview.html linguist-documentation=false
+docs/index.html linguist-documentation=false
